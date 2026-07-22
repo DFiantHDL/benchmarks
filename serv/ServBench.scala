@@ -27,9 +27,10 @@ private def stateLine(run: SimulationRun[? <: servant_sim], total: Long): String
   }
 
 /** Commit the Verilog for all servant tops (for the external Verilator harness), then run the
-  * DFacsimile side on the mini top and print throughput plus the architectural state line. The
-  * full-size (32 KiB RAM) tops are not DFacsimile-benched yet: mutable memories currently lower to
-  * packed-bits dynamic shifts, which blows up at 8192 x 32 bits. Run with:
+  * DFacsimile side on every top and print throughput plus the architectural state line. Both RAM
+  * sizes run: the memory node (a `long[]` backing store with O(1) read/write) replaced the
+  * packed-bits dynamic-shift lowering, so the 32 KiB tops run at the same speed as the mini. Run
+  * with:
   *
   * `benchmarks/runMain dfhdl.benchmarks.serv.servBench`
   */
@@ -59,6 +60,8 @@ object servBench extends NoTopAnnotIsRequired:
     println("committed Verilog to sandbox/ServantHello, ServantPhil, ServantHelloMini")
     bench("hello-mini", () => ServantHelloMini(), SimTier.Codegen, 100_000L, 2_000_000L)
     bench("hello-mini", () => ServantHelloMini(), SimTier.Interpreter, 5_000L, 50_000L)
+    bench("hello-32k", () => ServantHello(), SimTier.Codegen, 100_000L, 2_000_000L)
+    bench("phil-32k", () => ServantPhil(), SimTier.Codegen, 100_000L, 10_000_000L)
 end servBench
 
 /** Temporary bring-up scaffolding: single-step the mini top and trace the fetch/RF handshake. Run

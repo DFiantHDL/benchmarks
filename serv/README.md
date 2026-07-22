@@ -61,13 +61,15 @@ chars=<n> lines=<n> sig=<rotate-xor of all bytes> last=<byte> halts=<n> memacks=
 
 ## DFacsimile status
 
-`ServantHelloMini` runs on both DFacsimile tiers today and is the cross-simulator equivalence
-anchor (state lines verified bit-exact against Verilator at 55,001 and 2,100,001 cycles). The
-full-size tops are Verilator-only for now: DFacsimile has no mutable-memory primitive yet, so
-a RAM lowers to packed-bits dynamic shifts. Even the 256-byte mini RAM pays for it
-(DFacsimile Codegen ~0.6 Mcycles/s vs Verilator ~6), and 8192 x 32 bits overflows the codegen
-kernel's class limits outright. This benchmark is the forcing function for adding a proper
-RAM node to the simulator.
+All three tops run on DFacsimile, on both tiers, with state lines verified bit-exact against
+Verilator (`ServantHelloMini` is the cross-simulator anchor at 55,000 and 2,100,000 cycles;
+`ServantHello`/`ServantPhil` match too). This is thanks to the simulator's **memory node** (a
+`long[]`-backed RAM with an O(1) async read and synchronous write ports), which this benchmark
+forced: a `Bits(W) X D <> VAR.REG` accessed only cell-wise now lowers to that node instead of a
+wide register whose every dynamic index expanded into a barrel-shift network over the whole
+value. Before, only the 256-byte mini ran (Codegen ~0.6 Mcycles/s vs Verilator ~6) and 8192 x 32
+bits overflowed the codegen kernel's class limits; now the mini runs at ~6 Mcycles/s (about
+Verilator's speed) and the 32 KiB tops at ~5.7, RAM size no longer mattering.
 
 ## Verilator flow
 
