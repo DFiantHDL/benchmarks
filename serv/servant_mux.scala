@@ -8,33 +8,35 @@ package dfhdl.benchmarks.serv
 import dfhdl.*
 
 /** servant_mux.v: external-bus mux between GPIO (address bit 30 clear) and timer (bit 30 set).
+  * Clocked on `i_clk` with the synchronous MINI reset `i_rst`.
   */
+@hw.constraints.timing.clock(portName = "i_clk")
+@hw.constraints.timing.reset(portName = "i_rst")
 class servant_mux extends RTDesign:
-  val wb_rst = Bit <> IN
-  val cpu_adr = Bits(32) <> IN
-  val cpu_dat = Bits(32) <> IN
-  val cpu_we = Bit <> IN
-  val cpu_cyc = Bit <> IN
-  val cpu_rdt = Bits(32) <> OUT
-  val cpu_ack = Bit <> OUT.REG init 0
-  val gpio_dat = Bit <> OUT
-  val gpio_we = Bit <> OUT
-  val gpio_cyc = Bit <> OUT
-  val gpio_rdt = Bit <> IN
-  val timer_dat = Bits(32) <> OUT
-  val timer_we = Bit <> OUT
-  val timer_cyc = Bit <> OUT
-  val timer_rdt = Bits(32) <> IN
+  val i_wb_cpu_adr = Bits(32) <> IN
+  val i_wb_cpu_dat = Bits(32) <> IN
+  val i_wb_cpu_sel = Bits(4) <> IN
+  val i_wb_cpu_we = Bit <> IN
+  val i_wb_cpu_cyc = Bit <> IN
+  val o_wb_cpu_rdt = Bits(32) <> OUT
+  val o_wb_cpu_ack = Bit <> OUT.REG init 0
+  val o_wb_gpio_dat = Bit <> OUT
+  val o_wb_gpio_we = Bit <> OUT
+  val o_wb_gpio_cyc = Bit <> OUT
+  val i_wb_gpio_rdt = Bit <> IN
+  val o_wb_timer_dat = Bits(32) <> OUT
+  val o_wb_timer_we = Bit <> OUT
+  val o_wb_timer_cyc = Bit <> OUT
+  val i_wb_timer_rdt = Bits(32) <> IN
 
-  val s = cpu_adr(31, 30)
-  cpu_rdt := s(1).sel(timer_rdt, gpio_rdt.toBits(32))
-  cpu_ack.din := 0
-  if (cpu_cyc && !cpu_ack) cpu_ack.din := 1
-  if (wb_rst) cpu_ack.din := 0
-  gpio_dat := cpu_dat(0)
-  gpio_we := cpu_we
-  gpio_cyc := cpu_cyc && !s(1)
-  timer_dat := cpu_dat
-  timer_we := cpu_we
-  timer_cyc := cpu_cyc && s(1)
+  val s = i_wb_cpu_adr(31, 30)
+  o_wb_cpu_rdt := s(1).sel(i_wb_timer_rdt, i_wb_gpio_rdt.toBits(32))
+  o_wb_cpu_ack.din := 0
+  if (i_wb_cpu_cyc && !o_wb_cpu_ack) o_wb_cpu_ack.din := 1
+  o_wb_gpio_dat := i_wb_cpu_dat(0)
+  o_wb_gpio_we := i_wb_cpu_we
+  o_wb_gpio_cyc := i_wb_cpu_cyc && !s(1)
+  o_wb_timer_dat := i_wb_cpu_dat
+  o_wb_timer_we := i_wb_cpu_we
+  o_wb_timer_cyc := i_wb_cpu_cyc && s(1)
 end servant_mux

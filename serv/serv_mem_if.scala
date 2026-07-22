@@ -7,27 +7,34 @@ package dfhdl.benchmarks.serv
 
 import dfhdl.*
 
-/** serv_mem_if.v: load/store byte lane handling (W = 1, WITH_CSR = 1). */
+/** serv_mem_if.v: load/store byte lane handling (W = 1, WITH_CSR = 1). Clocked on `i_clk`, no
+  * reset. The MDU port (`i_mdu_op`) is omitted (no MDU).
+  */
+@hw.constraints.timing.clock(portName = "i_clk")
 class serv_mem_if extends RTDesign:
-  val bytecnt = Bits(2) <> IN
-  val lsb = Bits(2) <> IN
-  val mem_signed = Bit <> IN
-  val mem_word = Bit <> IN
-  val mem_half = Bit <> IN
-  val bufreg2_q = Bit <> IN
-  val rd = Bit <> OUT
-  val wb_sel = Bits(4) <> OUT
-  val misalign = Bit <> OUT
+  // State
+  val i_bytecnt = Bits(2) <> IN
+  val i_lsb = Bits(2) <> IN
+  val o_misalign = Bit <> OUT
+  // Control
+  val i_signed = Bit <> IN
+  val i_word = Bit <> IN
+  val i_half = Bit <> IN
+  // Data
+  val i_bufreg2_q = Bit <> IN
+  val o_rd = Bit <> OUT
+  // External interface
+  val o_wb_sel = Bits(4) <> OUT
 
   val signbit = Bit <> VAR.REG init 0
-  val dat_valid = mem_word || (bytecnt == b"00") || (mem_half && !bytecnt(1))
-  rd := dat_valid.sel(bufreg2_q, mem_signed && signbit)
-  wb_sel := (
-    (lsb == b"11") || mem_word || (mem_half && lsb(1)),
-    (lsb == b"10") || mem_word,
-    (lsb == b"01") || mem_word || (mem_half && !lsb(1)),
-    lsb == b"00"
+  val dat_valid = i_word || (i_bytecnt == b"00") || (i_half && !i_bytecnt(1))
+  o_rd := dat_valid.sel(i_bufreg2_q, i_signed && signbit)
+  o_wb_sel := (
+    (i_lsb == b"11") || i_word || (i_half && i_lsb(1)),
+    (i_lsb == b"10") || i_word,
+    (i_lsb == b"01") || i_word || (i_half && !i_lsb(1)),
+    i_lsb == b"00"
   ).toBits
-  if (dat_valid) signbit.din := bufreg2_q
-  misalign := (lsb(0) && (mem_word || mem_half)) || (lsb(1) && mem_word)
+  if (dat_valid) signbit.din := i_bufreg2_q
+  o_misalign := (i_lsb(0) && (i_word || i_half)) || (i_lsb(1) && i_word)
 end serv_mem_if

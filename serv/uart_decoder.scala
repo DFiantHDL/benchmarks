@@ -10,7 +10,8 @@ import dfhdl.*
   * the line idle high (mirroring the original decoder's negedge trigger), resyncs on every start
   * bit, and folds each received byte into a rotate-xor signature.
   */
-class uart_decoder(val cyclesPerBit: Int = 280) extends RTDesign:
+@hw.constraints.timing.clock(portName = "wb_clk")
+class uart_decoder(val cyclesPerBit: Int <> CONST = 280) extends RTDesign:
   val rx = Bit <> IN
   val char_count = UInt(32) <> OUT.REG init 0
   val line_count = UInt(32) <> OUT.REG init 0

@@ -8,10 +8,12 @@ import dfhdl.*
 
 /** servant_sim.v equivalent: the servant SoC with the UART monitor and halt/memory-ack counters.
   * All monitor state is exported as output ports, so a fixed cycle count yields one comparable
-  * state line in every simulator.
+  * state line in every simulator. Clocked on the package-default `wb_clk`/`wb_rst`.
   */
-class servant_sim(val memfile: String, val memsize: Int = 32768) extends RTDesign:
-  val wb_rst = Bit <> IN
+class servant_sim(
+    val memfile: String = "benchmarks/serv/sw/hello_uart.hex",
+    val memsize: Int <> CONST = 32768
+) extends RTDesign:
   val q = Bit <> OUT
   val pc_adr = Bits(32) <> OUT
   val pc_vld = Bit <> OUT
@@ -25,7 +27,6 @@ class servant_sim(val memfile: String, val memsize: Int = 32768) extends RTDesig
   val soc = servant(memfile, memsize)
   val mon = uart_decoder()
 
-  soc.wb_rst <> wb_rst
   q <> soc.q
   pc_adr <> soc.pc_adr
   pc_vld <> soc.pc_vld

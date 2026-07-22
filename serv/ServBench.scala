@@ -10,10 +10,9 @@ import dfhdl.sim.*
 import dfhdl.benchmarks.hex
 import dfhdl.internals.NoTopAnnotIsRequired
 
+// DFacsimile applies register/memory inits at time zero (the reset values), so no explicit reset
+// preamble is needed; the reset magnet stays deasserted and the design starts from its init state.
 private def resetAndRun(run: SimulationRun[? <: servant_sim], cycles: Long): Unit =
-  run.inspect { dut => dut.wb_rst.poke(1) }
-  run.continue(1)
-  run.inspect { dut => dut.wb_rst.poke(0) }
   if (cycles > 0) run.continue(cycles)
 
 private def stateLine(run: SimulationRun[? <: servant_sim], total: Long): String =
@@ -50,7 +49,7 @@ object servBench extends NoTopAnnotIsRequired:
     println(
       f"[$name $tier] timed $cycles%,d cycles in $dt%.3f s = ${cycles / dt / 1e6}%.3f Mcycles/s"
     )
-    println(stateLine(run, 1 + warmup + cycles))
+    println(stateLine(run, warmup + cycles))
   end bench
 
   def main(args: Array[String]): Unit =
@@ -78,17 +77,16 @@ object servTrace extends NoTopAnnotIsRequired:
         val core = dut.soc.cpu.cpu
         val rfif = dut.soc.cpu.rf_ram_if
         s"c=$c" +
-          s" icyc=${core.ibus_cyc.peek.bits.uint.toScalaBigInt}" +
-          s" iadr=${hex(core.ibus_adr.peek.uint.toScalaBigInt, 8)}" +
-          s" ack=${dut.soc.ram.ack.peek.bits.uint.toScalaBigInt}" +
-          s" rdy=${rfif.ready.peek.bits.uint.toScalaBigInt}" +
+          s" icyc=${core.o_ibus_cyc.peek.bits.uint.toScalaBigInt}" +
+          s" iadr=${hex(core.o_ibus_adr.peek.uint.toScalaBigInt, 8)}" +
+          s" ack=${dut.soc.ram.o_wb_ack.peek.bits.uint.toScalaBigInt}" +
+          s" rdy=${rfif.o_ready.peek.bits.uint.toScalaBigInt}" +
           s" clsb=${core.state.cnt_lsb.peek.uint.toScalaBigInt}" +
           s" cnt=${core.state.cnt.peek.toScalaBigInt}" +
-          s" cen=${core.state.cnt_en.peek.bits.uint.toScalaBigInt}" +
-          s" iste=${core.state.init_stage.peek.bits.uint.toScalaBigInt}" +
-          s" pcen=${core.state.ctrl_pc_en.peek.bits.uint.toScalaBigInt}" +
-          s" tso=${core.state.two_stage_op.peek.bits.uint.toScalaBigInt}" +
-          s" nirq=${core.state.new_irq.peek.bits.uint.toScalaBigInt}" +
+          s" cen=${core.state.o_cnt_en.peek.bits.uint.toScalaBigInt}" +
+          s" iste=${core.state.o_init.peek.bits.uint.toScalaBigInt}" +
+          s" pcen=${core.state.o_ctrl_pc_en.peek.bits.uint.toScalaBigInt}" +
+          s" tso=${core.state.i_two_stage_op.peek.bits.uint.toScalaBigInt}" +
           s" idone=${core.state.init_done.peek.bits.uint.toScalaBigInt}" +
           s" opc=${core.decode.opcode.peek.uint.toScalaBigInt}"
       }
@@ -137,7 +135,7 @@ object servText extends NoTopAnnotIsRequired:
         }
       println(s"decoded $seen chars:")
       println(sb.result())
-      println(stateLine(run, 1 + advanced))
+      println(stateLine(run, advanced))
     end if
   end main
 end servText

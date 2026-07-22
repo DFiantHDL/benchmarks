@@ -7,14 +7,17 @@ package dfhdl.benchmarks.serv
 
 import dfhdl.*
 
-/** servant_gpio.v: single-bit GPIO output (the software UART TX pin). */
+/** servant_gpio.v: single-bit GPIO output (the software UART TX pin). Clocked on `i_wb_clk`, no
+  * reset.
+  */
+@hw.constraints.timing.clock(portName = "i_wb_clk")
 class servant_gpio extends RTDesign:
-  val wb_dat = Bit <> IN
-  val wb_we = Bit <> IN
-  val wb_cyc = Bit <> IN
-  val wb_rdt = Bit <> OUT.REG init 0
-  val gpio = Bit <> OUT.REG init 0
+  val i_wb_dat = Bit <> IN
+  val i_wb_we = Bit <> IN
+  val i_wb_cyc = Bit <> IN
+  val o_wb_rdt = Bit <> OUT.REG init 0
+  val o_gpio = Bit <> OUT.REG init 0
 
-  wb_rdt.din := gpio
-  if (wb_cyc && wb_we) gpio.din := wb_dat
+  o_wb_rdt.din := o_gpio
+  if (i_wb_cyc && i_wb_we) o_gpio.din := i_wb_dat
 end servant_gpio

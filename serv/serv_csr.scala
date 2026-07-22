@@ -7,38 +7,42 @@ package dfhdl.benchmarks.serv
 
 import dfhdl.*
 
-/** serv_csr.v: the in-core CSRs (mstatus/mie/mcause) and timer-interrupt logic (W = 1). */
+/** serv_csr.v: the in-core CSRs (mstatus/mie/mcause) and timer-interrupt logic (W = 1). Clocked on
+  * `i_clk` with the synchronous MINI reset `i_rst` (resets o_new_irq and mie_mtie; the remaining
+  * registers also power up at 0 for cross-simulator determinism).
+  */
+@hw.constraints.timing.clock(portName = "i_clk")
+@hw.constraints.timing.reset(portName = "i_rst")
 class serv_csr extends RTDesign:
-  val wb_rst = Bit <> IN
   // State
-  val trig_irq = Bit <> IN // ibus_ack
-  val en = Bit <> IN // cnt_en
-  val cnt0to3 = Bit <> IN
-  val cnt3 = Bit <> IN
-  val cnt7 = Bit <> IN
-  val cnt11 = Bit <> IN
-  val cnt12 = Bit <> IN
-  val cnt_done = Bit <> IN
-  val mem_op = Bit <> IN // !mtval_pc
-  val mtip = Bit <> IN
-  val trap = Bit <> IN
+  val i_trig_irq = Bit <> IN // ibus_ack
+  val i_en = Bit <> IN // cnt_en
+  val i_cnt0to3 = Bit <> IN
+  val i_cnt3 = Bit <> IN
+  val i_cnt7 = Bit <> IN
+  val i_cnt11 = Bit <> IN
+  val i_cnt12 = Bit <> IN
+  val i_cnt_done = Bit <> IN
+  val i_mem_op = Bit <> IN // !mtval_pc
+  val i_mtip = Bit <> IN
+  val i_trap = Bit <> IN
+  val o_new_irq = Bit <> OUT.REG init 0
   // Control
-  val e_op = Bit <> IN
-  val ebreak = Bit <> IN
-  val mem_cmd = Bit <> IN
-  val mstatus_en = Bit <> IN
-  val mie_en = Bit <> IN
-  val mcause_en = Bit <> IN
-  val csr_source = Bits(2) <> IN // 00 CSR, 01 EXT, 10 SET, 11 CLR
-  val mret = Bit <> IN
-  val csr_d_sel = Bit <> IN
+  val i_e_op = Bit <> IN
+  val i_ebreak = Bit <> IN
+  val i_mem_cmd = Bit <> IN
+  val i_mstatus_en = Bit <> IN
+  val i_mie_en = Bit <> IN
+  val i_mcause_en = Bit <> IN
+  val i_csr_source = Bits(2) <> IN // 00 CSR, 01 EXT, 10 SET, 11 CLR
+  val i_mret = Bit <> IN
+  val i_csr_d_sel = Bit <> IN
   // Data
-  val rf_csr_out = Bit <> IN
-  val csr_imm = Bit <> IN
-  val rs1 = Bit <> IN
-  val new_irq = Bit <> OUT.REG init 0
-  val csr_in = Bit <> OUT
-  val rd = Bit <> OUT // o_q
+  val i_rf_csr_out = Bit <> IN
+  val o_csr_in = Bit <> OUT
+  val i_csr_imm = Bit <> IN
+  val i_rs1 = Bit <> IN
+  val o_q = Bit <> OUT
 
   val mstatus_mie = Bit <> VAR.REG init 0
   val mstatus_mpie = Bit <> VAR.REG init 0
@@ -47,38 +51,35 @@ class serv_csr extends RTDesign:
   val mcause3_0 = Bits(4) <> VAR.REG init all(0)
   val timer_irq_r = Bit <> VAR.REG init 0
 
-  val d = csr_d_sel.sel(csr_imm, rs1)
-  val mstatus = (mstatus_mie && cnt3) || cnt11 || cnt12
-  val mcause = cnt0to3.sel(mcause3_0(0), cnt_done && mcause31)
-  val csr_out = (mstatus_en && en && mstatus) || rf_csr_out || (mcause_en && en && mcause)
-  rd := csr_out
+  val d = i_csr_d_sel.sel(i_csr_imm, i_rs1)
+  val mstatus = (mstatus_mie && i_cnt3) || i_cnt11 || i_cnt12
+  val mcause = i_cnt0to3.sel(mcause3_0(0), i_cnt_done && mcause31)
+  val csr_out = (i_mstatus_en && i_en && mstatus) || i_rf_csr_out || (i_mcause_en && i_en && mcause)
+  o_q := csr_out
 
   val csr_in_w = Bit <> VAR
-  if (csr_source == b"01") csr_in_w := d
-  else if (csr_source == b"10") csr_in_w := csr_out || d
-  else if (csr_source == b"11") csr_in_w := csr_out && !d
+  if (i_csr_source == b"01") csr_in_w := d
+  else if (i_csr_source == b"10") csr_in_w := csr_out || d
+  else if (i_csr_source == b"11") csr_in_w := csr_out && !d
   else csr_in_w := csr_out
-  csr_in := csr_in_w
+  o_csr_in := csr_in_w
 
-  val timer_irq = mtip && mstatus_mie && mie_mtie
+  val timer_irq = i_mtip && mstatus_mie && mie_mtie
 
-  if (trig_irq)
+  if (i_trig_irq)
     timer_irq_r.din := timer_irq
-    new_irq.din := timer_irq && !timer_irq_r
-  if (mie_en && cnt7) mie_mtie.din := csr_in_w
+    o_new_irq.din := timer_irq && !timer_irq_r
+  if (i_mie_en && i_cnt7) mie_mtie.din := csr_in_w
   // mie: cleared on trap, restored from mpie on mret, written on mstatus bit-3 access
-  if ((trap && cnt_done) || (mstatus_en && cnt3 && en) || mret)
-    mstatus_mie.din := !trap && mret.sel(mstatus_mpie, csr_in_w)
+  if ((i_trap && i_cnt_done) || (i_mstatus_en && i_cnt3 && i_en) || i_mret)
+    mstatus_mie.din := !i_trap && i_mret.sel(mstatus_mpie, csr_in_w)
   // mpie (mstatus bit 7) is not readable or writable from software
-  if (trap && cnt_done) mstatus_mpie.din := mstatus_mie
+  if (i_trap && i_cnt_done) mstatus_mpie.din := mstatus_mie
   // exception code: timer=7, ebreak=3, ecall=11, misaligned load=4/store=6/jump=0
-  if ((mcause_en && en && cnt0to3) || (trap && cnt_done))
-    mcause3_0(3).din := (e_op && !ebreak) || (!trap && csr_in_w)
-    mcause3_0(2).din := new_irq || mem_op || (!trap && mcause3_0(3))
-    mcause3_0(1).din := new_irq || e_op || (mem_op && mem_cmd) || (!trap && mcause3_0(2))
-    mcause3_0(0).din := new_irq || e_op || (!trap && mcause3_0(1))
-  if ((mcause_en && cnt_done) || trap) mcause31.din := trap.sel(new_irq, csr_in_w)
-  if (wb_rst)
-    new_irq.din := 0
-    mie_mtie.din := 0
+  if ((i_mcause_en && i_en && i_cnt0to3) || (i_trap && i_cnt_done))
+    mcause3_0(3).din := (i_e_op && !i_ebreak) || (!i_trap && csr_in_w)
+    mcause3_0(2).din := o_new_irq || i_mem_op || (!i_trap && mcause3_0(3))
+    mcause3_0(1).din := o_new_irq || i_e_op || (i_mem_op && i_mem_cmd) || (!i_trap && mcause3_0(2))
+    mcause3_0(0).din := o_new_irq || i_e_op || (!i_trap && mcause3_0(1))
+  if ((i_mcause_en && i_cnt_done) || i_trap) mcause31.din := i_trap.sel(o_new_irq, csr_in_w)
 end serv_csr

@@ -8,69 +8,70 @@ package dfhdl.benchmarks.serv
 import dfhdl.*
 
 /** serv_rf_if.v: register file access multiplexing, including the four RF-resident CSRs (WITH_CSR =
-  * 1).
+  * 1). Purely combinational, so it carries no clock or reset.
   */
 class serv_rf_if extends RTDesign:
-  val cnt_en = Bit <> IN
-  val rdata0 = Bit <> IN
-  val rdata1 = Bit <> IN
-  // trap interface
-  val trap = Bit <> IN
-  val mret = Bit <> IN
-  val mepc = Bit <> IN
-  val mtval_pc = Bit <> IN
-  val bufreg_q = Bit <> IN
-  val bad_pc = Bit <> IN
-  // CSR write port
-  val csr_en = Bit <> IN
-  val csr_addr = Bits(2) <> IN
-  val csr_in = Bit <> IN
+  // RF interface
+  val i_cnt_en = Bit <> IN
+  val o_wreg0 = Bits(6) <> OUT
+  val o_wreg1 = Bits(6) <> OUT
+  val o_wen0 = Bit <> OUT
+  val o_wen1 = Bit <> OUT
+  val o_wdata0 = Bit <> OUT
+  val o_wdata1 = Bit <> OUT
+  val o_rreg0 = Bits(6) <> OUT
+  val o_rreg1 = Bits(6) <> OUT
+  val i_rdata0 = Bit <> IN
+  val i_rdata1 = Bit <> IN
+  // Trap interface
+  val i_trap = Bit <> IN
+  val i_mret = Bit <> IN
+  val i_mepc = Bit <> IN
+  val i_mtval_pc = Bit <> IN
+  val i_bufreg_q = Bit <> IN
+  val i_bad_pc = Bit <> IN
+  val o_csr_pc = Bit <> OUT
+  // CSR interface
+  val i_csr_en = Bit <> IN
+  val i_csr_addr = Bits(2) <> IN
+  val i_csr = Bit <> IN
+  val o_csr = Bit <> OUT
   // RD write port
-  val rd_wen = Bit <> IN
-  val rd_waddr = Bits(5) <> IN
-  val ctrl_rd = Bit <> IN
-  val alu_rd = Bit <> IN
-  val rd_alu_en = Bit <> IN
-  val csr_rd = Bit <> IN
-  val rd_csr_en = Bit <> IN
-  val mem_rd = Bit <> IN
-  val rd_mem_en = Bit <> IN
+  val i_rd_wen = Bit <> IN
+  val i_rd_waddr = Bits(5) <> IN
+  val i_ctrl_rd = Bit <> IN
+  val i_alu_rd = Bit <> IN
+  val i_rd_alu_en = Bit <> IN
+  val i_csr_rd = Bit <> IN
+  val i_rd_csr_en = Bit <> IN
+  val i_mem_rd = Bit <> IN
+  val i_rd_mem_en = Bit <> IN
   // read ports
-  val rs1_raddr = Bits(5) <> IN
-  val rs2_raddr = Bits(5) <> IN
-  // RF side
-  val wreg0 = Bits(6) <> OUT
-  val wreg1 = Bits(6) <> OUT
-  val wen0 = Bit <> OUT
-  val wen1 = Bit <> OUT
-  val wdata0 = Bit <> OUT
-  val wdata1 = Bit <> OUT
-  val rreg0 = Bits(6) <> OUT
-  val rreg1 = Bits(6) <> OUT
-  val rs1 = Bit <> OUT
-  val rs2 = Bit <> OUT
-  val csr = Bit <> OUT
-  val csr_pc = Bit <> OUT
+  val i_rs1_raddr = Bits(5) <> IN
+  val o_rs1 = Bit <> OUT
+  val i_rs2_raddr = Bits(5) <> IN
+  val o_rs2 = Bit <> OUT
 
-  val rd_wen_masked = rd_wen && rd_waddr.|
-  val rd = (rd_alu_en && alu_rd) || (rd_csr_en && csr_rd) || (rd_mem_en && mem_rd) || ctrl_rd
-  val mtval = mtval_pc.sel(bad_pc, bufreg_q)
+  val rd_wen = i_rd_wen && i_rd_waddr.|
+  val rd = (i_rd_alu_en && i_alu_rd) || (i_rd_csr_en && i_csr_rd) ||
+    (i_rd_mem_en && i_mem_rd) || i_ctrl_rd
+  val mtval = i_mtval_pc.sel(i_bad_pc, i_bufreg_q)
   // port 0: mtval during traps, rd otherwise; port 1: mepc during traps, csr otherwise
-  wdata0 := trap.sel(mtval, rd)
-  wdata1 := trap.sel(mepc, csr_in)
+  o_wdata0 := i_trap.sel(mtval, rd)
+  o_wdata1 := i_trap.sel(i_mepc, i_csr)
   // GPRs at 0-31; then mscratch(32) mtvec(33) mepc(34) mtval(35)
-  wreg0 := trap.sel(b"100011", (0, rd_waddr).toBits)
-  wreg1 := trap.sel(b"100010", (b"1000", csr_addr).toBits)
-  wen0 := cnt_en && (trap || rd_wen_masked)
-  wen1 := cnt_en && (trap || csr_en)
-  rreg0 := (0, rs1_raddr).toBits
+  o_wreg0 := i_trap.sel(b"100011", (0, i_rd_waddr).toBits)
+  o_wreg1 := i_trap.sel(b"100010", (b"1000", i_csr_addr).toBits)
+  o_wen0 := i_cnt_en && (i_trap || rd_wen)
+  o_wen1 := i_cnt_en && (i_trap || i_csr_en)
+  o_rreg0 := (0, i_rs1_raddr).toBits
   // rreg1 source: rs2 (normal) / csr address (CSR access) / MTVEC (trap) / MEPC (mret)
-  val sel_rs2 = !(trap || mret || csr_en)
-  val rreg1_low = (mret, trap).toBits | csr_en.sel(csr_addr, b"00") |
-    sel_rs2.sel(rs2_raddr(1, 0), b"00")
-  rreg1 := (!sel_rs2, sel_rs2.sel(rs2_raddr(4, 2), b"000"), rreg1_low).toBits
-  rs1 := rdata0
-  rs2 := rdata1
-  csr := rdata1 && csr_en
-  csr_pc := rdata1
+  val sel_rs2 = !(i_trap || i_mret || i_csr_en)
+  val rreg1_low = (i_mret, i_trap).toBits | i_csr_en.sel(i_csr_addr, b"00") |
+    sel_rs2.sel(i_rs2_raddr(1, 0), b"00")
+  o_rreg1 := (!sel_rs2, sel_rs2.sel(i_rs2_raddr(4, 2), b"000"), rreg1_low).toBits
+  o_rs1 := i_rdata0
+  o_rs2 := i_rdata1
+  o_csr := i_rdata1 && i_csr_en
+  o_csr_pc := i_rdata1
 end serv_rf_if

@@ -7,38 +7,42 @@ package dfhdl.benchmarks.serv
 
 import dfhdl.*
 
-/** serv_alu.v: the bit-serial ALU (W = 1). */
+/** serv_alu.v: the bit-serial ALU (W = 1). Clocked on `clk`, no reset. */
+@hw.constraints.timing.clock(portName = "clk")
 class serv_alu extends RTDesign:
-  val en = Bit <> IN // cnt_en
-  val cnt0 = Bit <> IN
-  val sub = Bit <> IN
-  val bool_op = Bits(2) <> IN
-  val cmp_eq = Bit <> IN
-  val cmp_sig = Bit <> IN
-  val rd_sel = Bits(3) <> IN
-  val rs1 = Bit <> IN
-  val op_b = Bit <> IN
-  val bufreg_q = Bit <> IN
-  val cmp = Bit <> OUT
-  val rd = Bit <> OUT
+  // State
+  val i_en = Bit <> IN
+  val i_cnt0 = Bit <> IN
+  val o_cmp = Bit <> OUT
+  // Control
+  val i_sub = Bit <> IN
+  val i_bool_op = Bits(2) <> IN
+  val i_cmp_eq = Bit <> IN
+  val i_cmp_sig = Bit <> IN
+  val i_rd_sel = Bits(3) <> IN
+  // Data
+  val i_rs1 = Bit <> IN
+  val i_op_b = Bit <> IN
+  val i_buf = Bit <> IN
+  val o_rd = Bit <> OUT
 
   val cmp_r = Bit <> VAR.REG init 0
   val add_cy_r = Bit <> VAR.REG init 0
 
-  // sign-extended operands (only the MSB cycle matters, gated by cmp_sig)
-  val rs1_sx = rs1 && cmp_sig
-  val op_b_sx = op_b && cmp_sig
-  val add_b = op_b ^ sub
-  val result_add = rs1 ^ add_b ^ add_cy_r
-  val add_cy = (rs1 && add_b) || (rs1 && add_cy_r) || (add_b && add_cy_r)
+  // sign-extended operands (only the MSB cycle matters, gated by i_cmp_sig)
+  val rs1_sx = i_rs1 && i_cmp_sig
+  val op_b_sx = i_op_b && i_cmp_sig
+  val add_b = i_op_b ^ i_sub
+  val result_add = i_rs1 ^ add_b ^ add_cy_r
+  val add_cy = (i_rs1 && add_b) || (i_rs1 && add_cy_r) || (add_b && add_cy_r)
   val result_lt = rs1_sx ^ !op_b_sx ^ add_cy
-  val result_eq = !result_add && (cmp_r || cnt0)
-  cmp := cmp_eq.sel(result_eq, result_lt)
+  val result_eq = !result_add && (cmp_r || i_cnt0)
+  o_cmp := i_cmp_eq.sel(result_eq, result_lt)
   // 00 xor, 01 zero (shift ops), 10 or, 11 and
-  val result_bool = ((rs1 ^ op_b) && !bool_op(0)) || (bool_op(1) && op_b && rs1)
-  val result_slt = cmp_r && cnt0
-  rd := bufreg_q || (rd_sel(0) && result_add) || (rd_sel(1) && result_slt) ||
-    (rd_sel(2) && result_bool)
-  add_cy_r.din := en.sel(add_cy, sub)
-  if (en) cmp_r.din := cmp
+  val result_bool = ((i_rs1 ^ i_op_b) && !i_bool_op(0)) || (i_bool_op(1) && i_op_b && i_rs1)
+  val result_slt = cmp_r && i_cnt0
+  o_rd := i_buf || (i_rd_sel(0) && result_add) || (i_rd_sel(1) && result_slt) ||
+    (i_rd_sel(2) && result_bool)
+  add_cy_r.din := i_en.sel(add_cy, i_sub)
+  if (i_en) cmp_r.din := o_cmp
 end serv_alu
