@@ -21,9 +21,8 @@ class servant_ram(
     val depth: Int <> CONST = 256
 ) extends RTDesign:
   self =>
-  private def log2(n: Int): Int = 31 - Integer.numberOfLeadingZeros(n)
   val words = depth.toScalaInt / 4
-  val i_wb_adr = Bits(log2(words)) <> IN
+  val i_wb_adr = Bits.until(words) <> IN
   val i_wb_dat = Bits(32) <> IN
   val i_wb_sel = Bits(4) <> IN
   val i_wb_we = Bit <> IN
@@ -33,16 +32,15 @@ class servant_ram(
 
   o_wb_ack.din := i_wb_cyc && !o_wb_ack
 
-  @hw.constraints.timing.clock(portName = "i_wb_clk")
-  @hw.constraints.timing.related(self)
-  val ram = new RTDomain:
+  @hw.constraints.timing.related(self, includeReset = false)
+  @hw.annotation.flattenMode.transparent
+  val write = new RTDomain:
     val mem = Bits(32) X words <> VAR.REG initFile memfile
+    val we = i_wb_we && i_wb_cyc
+    if (we && i_wb_sel(0)) mem(i_wb_adr)(7, 0).din := i_wb_dat(7, 0)
+    if (we && i_wb_sel(1)) mem(i_wb_adr)(15, 8).din := i_wb_dat(15, 8)
+    if (we && i_wb_sel(2)) mem(i_wb_adr)(23, 16).din := i_wb_dat(23, 16)
+    if (we && i_wb_sel(3)) mem(i_wb_adr)(31, 24).din := i_wb_dat(31, 24)
 
-  val we = i_wb_we && i_wb_cyc
-  val addr = i_wb_adr.uint
-  if (we && i_wb_sel(0)) ram.mem(addr)(7, 0).din := i_wb_dat(7, 0)
-  if (we && i_wb_sel(1)) ram.mem(addr)(15, 8).din := i_wb_dat(15, 8)
-  if (we && i_wb_sel(2)) ram.mem(addr)(23, 16).din := i_wb_dat(23, 16)
-  if (we && i_wb_sel(3)) ram.mem(addr)(31, 24).din := i_wb_dat(31, 24)
-  o_wb_rdt.din := ram.mem(addr)
+  o_wb_rdt.din := write.mem(i_wb_adr)
 end servant_ram
