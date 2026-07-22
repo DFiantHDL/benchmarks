@@ -1,0 +1,113 @@
+// SPDX-License-Identifier: Apache-2.0
+package dfhdl.benchmarks
+
+/** Builds and runs the external Verilator model for a committed benchmark top, so `--verilator` can
+  * print the Verilog reference measurement next to the DFacsimile one.
+  *
+  * Expects the top's generated SystemVerilog under `sandbox/<top>/hdl` (produced by the bench's
+  * `.compile` step) and a C++ harness that verilates with `--prefix VTOP` and takes
+  * `<warmup> <timed>` cycle arguments (the `bench_*.cpp` under each benchmark's `verilator/`). The
+  * model is built once per top per JVM run and reused across configs.
+  *
+  * Verilator discovery: the binary is `verilator` on Unix and `verilator_bin.exe` on Windows (the
+  * perl `verilator` wrapper is broken outside the OSS CAD Suite env scripts), overridable with the
+  * `VERILATOR_BIN` env var; both are resolved through `PATH`. On Windows the generated makefile's
+  * back-slashed `VERILATOR_ROOT` gets stripped by the shell in the include step, so a
+  * forward-slashed `VERILATOR_ROOT` is passed explicitly (from the env var, or derived from the
+  * binary location).
+  */
+object Verilator:
+  private val built = scala.collection.mutable.Set.empty[String]
+  private val skip = scala.collection.mutable.Set.empty[String]
+  private val isWindows = sys.props.getOrElse("os.name", "").toLowerCase.contains("win")
+
+  private lazy val binaryName: String =
+    sys.env.getOrElse("VERILATOR_BIN", if isWindows then "verilator_bin.exe" else "verilator")
+
+  private lazy val rootEnv: Map[String, String] =
+    sys.env.get("VERILATOR_ROOT") match
+      case Some(r)           => Map("VERILATOR_ROOT" -> r.replace('\\', '/'))
+      case None if isWindows =>
+        // derive <root>/share/verilator from <root>/bin/verilator_bin.exe (via `where`)
+        scala.util.Try {
+          val line =
+            os.proc("where", binaryName).call(check = false).out.trim().linesIterator.next()
+          val root = os.Path(line) / os.up / os.up / "share" / "verilator"
+          Map("VERILATOR_ROOT" -> root.toString.replace('\\', '/'))
+        }.getOrElse(Map.empty)
+      case None => Map.empty
+
+  private val mcpsRe = """=\s*([0-9.]+)\s*Mcycles/s""".r
+
+  private def parse(out: String): Option[(Double, String)] =
+    val mcps = mcpsRe.findFirstMatchIn(out).map(_.group(1).toDouble)
+    val state = out.linesIterator.find(_.contains("after ")).getOrElse("")
+    mcps.map(m => (m, state))
+
+  /** Build (once) and run `sandbox/<top>/hdl` under `harnessRel` for `warmup`+`timed` cycles,
+    * echoing the harness output and returning its `(Mcycles/s, state line)`. A missing HDL dir or a
+    * failed build is reported once, then skipped on later configs for the same top, returning None.
+    */
+  def run(top: String, harnessRel: String, warmup: Long, timed: Long): Option[(Double, String)] =
+    val hdlDir = os.pwd / "sandbox" / top / "hdl"
+    if skip.contains(top) then None
+    else if !os.exists(hdlDir) then
+      println(s"[verilator] $top: no HDL at $hdlDir")
+      skip += top
+      None
+    else
+      val ready = built.contains(top) || build(top, hdlDir, harnessRel)
+      if !ready then
+        skip += top
+        None
+      else
+        built += top
+        val exe = hdlDir / "obj_dir" / (if isWindows then "VTOP.exe" else "VTOP")
+        val res = os.proc(exe.toString, warmup.toString, timed.toString)
+          .call(cwd = hdlDir, stdout = os.Pipe, stderr = os.Pipe, check = false)
+        val out = res.out.text() + res.err.text()
+        print(out) // echo the harness measurement live
+        parse(out)
+    end if
+  end run
+
+  private def build(top: String, hdlDir: os.Path, harnessRel: String): Boolean =
+    try
+      os.remove.all(hdlDir / "obj_dir")
+      val svs = os.list(hdlDir).filter(_.ext == "sv").map(_.toString).toSeq
+      val harness = (os.pwd / os.RelPath(harnessRel)).toString
+      val cmd = Seq(
+        binaryName,
+        "-O3",
+        "--cc",
+        "--exe",
+        "--build",
+        "-j",
+        "0",
+        "--prefix",
+        "VTOP",
+        "-Mdir",
+        "obj_dir",
+        "-Wno-fatal",
+        "--top-module",
+        top,
+        s"-I${hdlDir}"
+      ) ++ svs ++
+        Seq(harness, "-CFLAGS", "-O3")
+      val res =
+        os.proc(cmd).call(cwd = hdlDir, env = rootEnv, check = false, stdout = os.Pipe,
+          stderr = os.Pipe)
+      if res.exitCode == 0 then true
+      else
+        println(s"[verilator] build failed for $top (exit ${res.exitCode}):")
+        println((res.out.text() + res.err.text()).linesIterator.toSeq.takeRight(12).mkString("\n"))
+        false
+    catch
+      case e: Throwable =>
+        println(
+          s"[verilator] could not run '$binaryName' for $top (set VERILATOR_BIN / add it to " +
+            s"PATH): ${e.getMessage}"
+        )
+        false
+  end build
+end Verilator

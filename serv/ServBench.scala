@@ -7,7 +7,7 @@ package dfhdl.benchmarks.serv
 
 import dfhdl.*
 import dfhdl.sim.*
-import dfhdl.benchmarks.hex
+import dfhdl.benchmarks.{hex, Verilator, BenchTable}
 import dfhdl.internals.NoTopAnnotIsRequired
 
 // DFacsimile applies register/memory inits at time zero (the reset values), so no explicit reset
@@ -35,9 +35,13 @@ private def stateLine(run: SimulationRun[? <: servant_sim], total: Long): String
   * `benchmarks/runMain dfhdl.benchmarks.serv.servBench`
   */
 object servBench extends NoTopAnnotIsRequired:
+  private val harness = "benchmarks/serv/verilator/bench_serv.cpp"
+  private var withVerilator = false
+
   private def bench(
       name: String,
       mkTop: () => servant_sim,
+      top: String,
       tier: SimTier,
       warmup: Long,
       cycles: Long
@@ -47,21 +51,49 @@ object servBench extends NoTopAnnotIsRequired:
     val t0 = System.nanoTime()
     run.continue(cycles)
     val dt = (System.nanoTime() - t0) / 1e9
-    println(
-      f"[$name $tier] timed $cycles%,d cycles in $dt%.3f s = ${cycles / dt / 1e6}%.3f Mcycles/s"
-    )
-    println(stateLine(run, warmup + cycles))
+    val mcps = cycles / dt / 1e6
+    val state = stateLine(run, warmup + cycles)
+    println(f"[$name $tier] timed $cycles%,d cycles in $dt%.3f s = $mcps%.3f Mcycles/s")
+    println(state)
+    val v =
+      if withVerilator && tier == SimTier.Codegen then Verilator.run(top, harness, warmup, cycles)
+      else None
+    if tier == SimTier.Codegen then
+      BenchTable.add(
+        s"serv/$name",
+        mcps,
+        BenchTable.field("sig", state),
+        v.map(_._1),
+        v.map(t => BenchTable.field("sig", t._2))
+      )
   end bench
 
   def main(args: Array[String]): Unit =
+    withVerilator = args.contains("--verilator")
     ServantHello().compile
     ServantPhil().compile
     ServantHelloMini().compile
     println("committed Verilog to sandbox/ServantHello, ServantPhil, ServantHelloMini")
-    bench("hello-mini", () => ServantHelloMini(), SimTier.Codegen, 100_000L, 2_000_000L)
-    bench("hello-mini", () => ServantHelloMini(), SimTier.Interpreter, 5_000L, 50_000L)
-    bench("hello-32k", () => ServantHello(), SimTier.Codegen, 100_000L, 2_000_000L)
-    bench("phil-32k", () => ServantPhil(), SimTier.Codegen, 100_000L, 10_000_000L)
+    bench(
+      "hello-mini",
+      () => ServantHelloMini(),
+      "ServantHelloMini",
+      SimTier.Codegen,
+      100_000L,
+      2_000_000L
+    )
+    bench(
+      "hello-mini",
+      () => ServantHelloMini(),
+      "ServantHelloMini",
+      SimTier.Interpreter,
+      5_000L,
+      50_000L
+    )
+    bench("hello-32k", () => ServantHello(), "ServantHello", SimTier.Codegen, 100_000L, 2_000_000L)
+    bench("phil-32k", () => ServantPhil(), "ServantPhil", SimTier.Codegen, 100_000L, 10_000_000L)
+    BenchTable.flush()
+  end main
 end servBench
 
 /** Temporary bring-up scaffolding: single-step the mini top and trace the fetch/RF handshake. Run
