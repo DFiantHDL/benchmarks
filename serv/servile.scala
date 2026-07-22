@@ -38,11 +38,10 @@ class servile extends RTDesign:
   val rf_rdata = Bits(2) <> IN
   val halt = Bit <> OUT
 
-  val cpu = new serv_top
-  val mux = new servile_mux
-  val arbiter = new servile_arbiter
-  val rf_ram_if = new serv_rf_ram_if
-
+  val cpu = serv_top()
+  val mux = servile_mux()
+  val arbiter = servile_arbiter()
+  val rf_ram_if = serv_rf_ram_if()
   cpu.wb_rst <> wb_rst
   cpu.timer_irq <> timer_irq
 

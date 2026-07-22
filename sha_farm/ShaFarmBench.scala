@@ -4,19 +4,18 @@ package dfhdl.benchmarks.sha_farm
 import dfhdl.*
 import dfhdl.sim.*
 import dfhdl.benchmarks.hex
-import dfhdl.compiler.stages.StagedDesign
 import dfhdl.internals.NoTopAnnotIsRequired
 
 /** The DFacsimile side of the scaled [[SHAFarm]] baseline benchmark: commit the generated Verilog
-  * (for the external Verilator harness), then per kernel tier warm up (JIT), time a bulk
-  * block-less `continue`, and print the final architectural state for cross-simulator equivalence
-  * checking. Run with:
+  * (for the external Verilator harness), then per kernel tier warm up (JIT), time a bulk block-less
+  * `continue`, and print the final architectural state for cross-simulator equivalence checking.
+  * Run with:
   *
   * `benchmarks/runMain dfhdl.benchmarks.sha_farm.shaFarmBench`
   */
 object shaFarmBench extends NoTopAnnotIsRequired:
   private def bench(n: Int, tier: SimTier, warmup: Long, cycles: Long): Unit =
-    val run = (new SHAFarm(n)).simulation.withTier(tier).run()
+    val run = SHAFarm(n).simulation.withTier(tier).run()
     run.continue(warmup)
     val t0 = System.nanoTime()
     run.continue(cycles)
@@ -30,10 +29,10 @@ object shaFarmBench extends NoTopAnnotIsRequired:
     })
 
   def main(args: Array[String]): Unit =
-    StagedDesign(new SHAFarm()).compile
-    StagedDesign(new SHAFarm64()).compile
-    StagedDesign(new SHAFarm8()).compile
-    StagedDesign(new SHAFarm1()).compile
+    SHAFarm().compile
+    SHAFarm64().compile
+    SHAFarm8().compile
+    SHAFarm1().compile
     println("committed Verilog to sandbox/SHAFarm, SHAFarm64, SHAFarm8, SHAFarm1")
     bench(32, SimTier.Codegen, 1_000_000L, 10_000_000L)
     bench(32, SimTier.Interpreter, 20_000L, 200_000L)
@@ -53,7 +52,7 @@ object shaProfile extends NoTopAnnotIsRequired:
   def main(args: Array[String]): Unit =
     val n = if args.nonEmpty then args(0).toInt else 32
     val cycles = if args.length > 1 then args(1).toLong else 30_000_000L
-    val run = (new SHAFarm(n)).simulation.withTier(SimTier.Codegen).run()
+    val run = SHAFarm(n).simulation.withTier(SimTier.Codegen).run()
     run.continue(1_000_000L)
     val t0 = System.nanoTime()
     run.continue(cycles)

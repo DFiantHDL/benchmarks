@@ -16,13 +16,12 @@ class servant(val memfile: String, val memsize: Int = 32768) extends RTDesign:
   val pc_adr = Bits(32) <> OUT
   val pc_vld = Bit <> OUT
 
-  val cpu = new servile
-  val mux = new servant_mux
-  val ram = new servant_ram(memfile, memsize / 4)
-  val timer = new servant_timer
-  val gpio = new servant_gpio
-  val rf_ram = new serv_rf_ram
-
+  val cpu = servile()
+  val mux = servant_mux()
+  val ram = servant_ram(memfile, memsize / 4)
+  val timer = servant_timer()
+  val gpio = servant_gpio()
+  val rf_ram = serv_rf_ram()
   cpu.wb_rst <> wb_rst
   cpu.timer_irq <> timer.irq
 

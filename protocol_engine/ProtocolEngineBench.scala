@@ -4,7 +4,6 @@ package dfhdl.benchmarks.protocol_engine
 import dfhdl.*
 import dfhdl.sim.*
 import dfhdl.benchmarks.hex
-import dfhdl.compiler.stages.StagedDesign
 import dfhdl.internals.NoTopAnnotIsRequired
 
 /** The DFacsimile side of the [[ProtocolEngine]] benchmark: commit the generated Verilog (for the
@@ -16,7 +15,7 @@ import dfhdl.internals.NoTopAnnotIsRequired
   */
 object protocolEngineBench extends NoTopAnnotIsRequired:
   private def bench(tier: SimTier, warmup: Long, cycles: Long): Unit =
-    val run = (new ProtocolEngine()).simulation.withTier(tier).run()
+    val run = ProtocolEngine().simulation.withTier(tier).run()
     run.continue(warmup)
     val t0 = System.nanoTime()
     run.continue(cycles)
@@ -35,7 +34,7 @@ object protocolEngineBench extends NoTopAnnotIsRequired:
   end bench
 
   def main(args: Array[String]): Unit =
-    StagedDesign(new ProtocolEngine()).compile
+    ProtocolEngine().compile
     println("committed Verilog to sandbox/ProtocolEngine")
     bench(SimTier.Codegen, 2_000_000L, 100_000_000L)
     bench(SimTier.Interpreter, 100_000L, 5_000_000L)

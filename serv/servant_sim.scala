@@ -22,8 +22,8 @@ class servant_sim(val memfile: String, val memsize: Int = 32768) extends RTDesig
   val halt_count = UInt(32) <> OUT.REG init 0
   val mem_ack_count = UInt(32) <> OUT.REG init 0
 
-  val soc = new servant(memfile, memsize)
-  val mon = new uart_decoder()
+  val soc = servant(memfile, memsize)
+  val mon = uart_decoder()
 
   soc.wb_rst <> wb_rst
   q <> soc.q

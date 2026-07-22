@@ -8,7 +8,6 @@ package dfhdl.benchmarks.serv
 import dfhdl.*
 import dfhdl.sim.*
 import dfhdl.benchmarks.hex
-import dfhdl.compiler.stages.StagedDesign
 import dfhdl.internals.NoTopAnnotIsRequired
 
 private def resetAndRun(run: SimulationRun[? <: servant_sim], cycles: Long): Unit =
@@ -55,12 +54,12 @@ object servBench extends NoTopAnnotIsRequired:
   end bench
 
   def main(args: Array[String]): Unit =
-    StagedDesign(new ServantHello()).compile
-    StagedDesign(new ServantPhil()).compile
-    StagedDesign(new ServantHelloMini()).compile
+    ServantHello().compile
+    ServantPhil().compile
+    ServantHelloMini().compile
     println("committed Verilog to sandbox/ServantHello, ServantPhil, ServantHelloMini")
-    bench("hello-mini", () => new ServantHelloMini(), SimTier.Codegen, 100_000L, 2_000_000L)
-    bench("hello-mini", () => new ServantHelloMini(), SimTier.Interpreter, 5_000L, 50_000L)
+    bench("hello-mini", () => ServantHelloMini(), SimTier.Codegen, 100_000L, 2_000_000L)
+    bench("hello-mini", () => ServantHelloMini(), SimTier.Interpreter, 5_000L, 50_000L)
 end servBench
 
 /** Temporary bring-up scaffolding: single-step the mini top and trace the fetch/RF handshake. Run
@@ -71,7 +70,7 @@ end servBench
 object servTrace extends NoTopAnnotIsRequired:
   def main(args: Array[String]): Unit =
     val cycles = args.headOption.map(_.toInt).getOrElse(90)
-    val run = (new ServantHelloMini()).simulation.withTier(SimTier.Codegen).run()
+    val run = ServantHelloMini().simulation.withTier(SimTier.Codegen).run()
     resetAndRun(run, 0)
     for c <- 1 to cycles do
       run.continue(1)
@@ -106,7 +105,7 @@ end servTrace
   */
 object servText extends NoTopAnnotIsRequired:
   def main(args: Array[String]): Unit =
-    val run = (new ServantHelloMini()).simulation.withTier(SimTier.Codegen).run()
+    val run = ServantHelloMini().simulation.withTier(SimTier.Codegen).run()
     resetAndRun(run, 0)
     if (args.contains("edges"))
       var last = false

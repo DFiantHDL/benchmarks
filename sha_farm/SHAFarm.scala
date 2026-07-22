@@ -139,7 +139,7 @@ end SHA256Unit
 class SHAFarm(val n: Int = 32) extends RTDesign:
   val agg = Bits(128) <> OUT
   val units = List.tabulate(n) { i =>
-    val u = new SHA256Unit
+    val u = SHA256Unit()
     u.seed <> d"32'${i * 2654435 + 101}".bits
     u
   }

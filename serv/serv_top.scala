@@ -46,17 +46,16 @@ class serv_top extends RTDesign:
   val dbus_rdt = Bits(32) <> IN
   val dbus_ack = Bit <> IN
 
-  val state = new serv_state
-  val decode = new serv_decode
-  val immdec = new serv_immdec
-  val bufreg = new serv_bufreg
-  val bufreg2 = new serv_bufreg2
-  val ctrl = new serv_ctrl
-  val alu = new serv_alu
-  val rf_if = new serv_rf_if
-  val mem_if = new serv_mem_if
-  val csr = new serv_csr
-
+  val state = serv_state()
+  val decode = serv_decode()
+  val immdec = serv_immdec()
+  val bufreg = serv_bufreg()
+  val bufreg2 = serv_bufreg2()
+  val ctrl = serv_ctrl()
+  val alu = serv_alu()
+  val rf_if = serv_rf_if()
+  val mem_if = serv_mem_if()
+  val csr = serv_csr()
   state.wb_rst <> wb_rst
   state.new_irq <> csr.new_irq
   state.alu_cmp <> alu.cmp
