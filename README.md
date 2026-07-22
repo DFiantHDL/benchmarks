@@ -26,6 +26,7 @@ Current works:
 |---|---|---|
 | [`sha_farm`](sha_farm/) | written fresh (secworks/sha256-style round structure) | Apache 2.0 |
 | [`protocol_engine`](protocol_engine/) | written fresh | Apache 2.0 |
+| [`serv`](serv/) | port of [olofk/serv](https://github.com/olofk/serv) (via RTLMeter's design copy) | ISC |
 
 ## Running
 
