@@ -22,22 +22,21 @@ int main(int argc, char** argv) {
 
     auto cycles = [&](uint64_t n) {
         for (uint64_t i = 0; i < n; i++) {
-            top->clk = 1;
+            top->wb_clk = 1;
             top->eval();
-            top->clk = 0;
+            top->wb_clk = 0;
             top->eval();
         }
     };
 
-    // uncounted preamble: assert the implicit `rst` for one cycle so the generated Verilog
-    // loads its register/memory power-up inits (DFacsimile applies these at time zero)
-    top->clk = 0;
-    top->rst = 1;
+    // uncounted preamble: assert wb_rst for one cycle so the generated Verilog loads its
+    // synchronous register inits. The reset magnet is named wb_rst (config.scala), so the
+    // architectural reset and the init-load are the same signal now. The initFile RAM powers
+    // up at construction and sits outside the reset. DFacsimile applies every init at time
+    // zero, so its mains count from the same post-reset state with no preamble.
+    top->wb_clk = 0;
     top->wb_rst = 1;
     top->eval();
-    cycles(1);
-    top->rst = 0;
-    // cycle 1: the architectural (wb_rst) reset cycle, matching the DFacsimile harness
     cycles(1);
     top->wb_rst = 0;
     cycles(warmup);
@@ -45,7 +44,7 @@ int main(int argc, char** argv) {
     cycles(timed);
     auto t1 = std::chrono::steady_clock::now();
     double dt = std::chrono::duration<double>(t1 - t0).count();
-    uint64_t total = 1 + warmup + timed;
+    uint64_t total = warmup + timed;
     printf("[verilator] timed %llu cycles in %.3f s = %.3f Mcycles/s\n",
            (unsigned long long)timed, dt, timed / dt / 1e6);
     printf("  after %llu cycles: chars=%u lines=%u sig=%08x last=%02x halts=%u memacks=%u "
