@@ -14,6 +14,7 @@ import dfhdl.*
   * (`i_mdu_op`, `o_mdu_valid`, `i_mdu_ready`) are omitted (no MDU).
   */
 @hw.constraints.timing.clock(portName = "i_clk")
+@hw.constraints.timing.reset()
 class serv_state extends RTDesign:
   val i_rst = Rst <> IN
   // State
@@ -115,13 +116,4 @@ class serv_state extends RTDesign:
   if (i_ibus_ack || o_cnt_done)
     misalign_trap_sync_r.din :=
       !i_ibus_ack && ((trap_pending && o_init) || misalign_trap_sync_r)
-
-  // The MINI reset targets exactly these four registers. A declared `Rst` port is readable but
-  // (unlike a `@timing.reset` annotation) does not auto-reset the registers, so the reset is
-  // applied explicitly here to match the baseline's `always @(posedge i_clk) if (i_rst) ...`.
-  if (i_rst.actual)
-    init_done.din := 0
-    o_ctrl_jump.din := 0
-    cnt.din := 0
-    cnt_lsb.din := all(0)
 end serv_state
