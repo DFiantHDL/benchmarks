@@ -70,6 +70,7 @@ object servBench extends NoTopAnnotIsRequired:
 
   def main(args: Array[String]): Unit =
     withVerilator = args.contains("--verilator")
+    Verilator.configure(args)
     ServantHello().compile
     ServantPhil().compile
     ServantHelloMini().compile

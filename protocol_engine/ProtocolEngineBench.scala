@@ -52,6 +52,7 @@ object protocolEngineBench extends NoTopAnnotIsRequired:
 
   def main(args: Array[String]): Unit =
     withVerilator = args.contains("--verilator")
+    Verilator.configure(args)
     ProtocolEngine().compile
     println("committed Verilog to sandbox/ProtocolEngine")
     bench(SimTier.Codegen, 2_000_000L, 100_000_000L)

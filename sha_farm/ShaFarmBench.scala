@@ -53,6 +53,7 @@ object shaFarmBench extends NoTopAnnotIsRequired:
 
   def main(args: Array[String]): Unit =
     withVerilator = args.contains("--verilator")
+    Verilator.configure(args)
     SHAFarm().compile
     SHAFarm64().compile
     SHAFarm8().compile
