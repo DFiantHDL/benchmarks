@@ -8,7 +8,8 @@ import dfhdl.internals.NoTopAnnotIsRequired
   * parallelism before investing in a parallel DFacsimile kernel. Commits the Verilog for the two
   * parallelizable tops (the 64-core SHA farm and the protocol engine), then verilates + runs each
   * at a sweep of thread counts, printing single-thread and multithreaded Mcps side by side. Run:
-  * `benchmarks/runMain dfhdl.benchmarks.verilatorThreadSweep [threadCounts...]`  (default 1 2 4 8 16)
+  * `benchmarks/runMain dfhdl.benchmarks.verilatorThreadSweep [threadCounts...]` (default 1 2 4 8
+  * 16)
   */
 object verilatorThreadSweep extends NoTopAnnotIsRequired:
   private val shaHarness = "benchmarks/sha_farm/verilator/bench_sha.cpp"
@@ -25,11 +26,12 @@ object verilatorThreadSweep extends NoTopAnnotIsRequired:
     dfhdl.benchmarks.protocol_engine.ProtocolEngine().compile
     println("committed Verilog to sandbox/SHAFarm64, sandbox/ProtocolEngine")
 
-    val rows = for n <- threadCounts yield
-      Verilator.threads = n
-      val sha = Verilator.run("SHAFarm64", shaHarness, warmup, timed).map(_._1)
-      val proto = Verilator.run("ProtocolEngine", protoHarness, warmup, timed).map(_._1)
-      (n, sha, proto)
+    val rows =
+      for n <- threadCounts yield
+        Verilator.threads = n
+        val sha = Verilator.run("SHAFarm64", shaHarness, warmup, timed).map(_._1)
+        val proto = Verilator.run("ProtocolEngine", protoHarness, warmup, timed).map(_._1)
+        (n, sha, proto)
 
     def cell(o: Option[Double]): String = o.map(m => f"$m%8.2f").getOrElse("     -  ")
     val shaBase = rows.headOption.flatMap(_._2)
@@ -39,7 +41,9 @@ object verilatorThreadSweep extends NoTopAnnotIsRequired:
         case (Some(c), Some(b)) if b > 0 => f"${c / b}%5.2fx"
         case _                           => "   -  "
     println()
-    println(f"${"threads"}%7s | ${"sha-64 Mcps"}%12s | ${"vs 1T"}%6s | ${"proto Mcps"}%11s | ${"vs 1T"}%6s")
+    println(
+      f"${"threads"}%7s | ${"sha-64 Mcps"}%12s | ${"vs 1T"}%6s | ${"proto Mcps"}%11s | ${"vs 1T"}%6s"
+    )
     println("-".repeat(56))
     for (n, sha, proto) <- rows do
       println(

@@ -8,9 +8,9 @@ package dfhdl.benchmarks.serv
 import dfhdl.*
 
 /** servile_mux.v: data-bus mux between memory (low address space) and the external bus, with the
-  * simulation halt-address swallow (sim = 1). The baseline signals completion with `$finish`,
-  * which is not synthesizable, so this port exposes an extra `o_halt` observation output instead;
-  * the signature-file path (`sim_sig_adr`) is not ported. Clocked on `i_clk`, reset `i_rst`.
+  * simulation halt-address swallow (sim = 1). The baseline signals completion with `$finish`, which
+  * is not synthesizable, so this port exposes an extra `o_halt` observation output instead; the
+  * signature-file path (`sim_sig_adr`) is not ported. Clocked on `i_clk`, reset `i_rst`.
   */
 @hw.constraints.timing.clock(portName = "i_clk")
 @hw.constraints.timing.reset(portName = "i_rst")

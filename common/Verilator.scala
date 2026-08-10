@@ -35,8 +35,9 @@ object Verilator:
     val i = args.indexOf("--threads")
     val n =
       if i >= 0 && i + 1 < args.length then args(i + 1).toIntOption.getOrElse(0)
-      else args.collectFirst { case s if s.startsWith("--threads=") => s.drop(10).toIntOption }
-        .flatten.getOrElse(0)
+      else
+        args.collectFirst { case s if s.startsWith("--threads=") => s.drop(10).toIntOption }
+          .flatten.getOrElse(0)
     threads = n
     if threads >= 2 then println(s"[verilator] multithreaded model: --threads $threads")
 
