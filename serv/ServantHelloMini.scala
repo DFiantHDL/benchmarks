@@ -4,6 +4,7 @@
 package dfhdl.benchmarks.serv
 
 import dfhdl.*
+import dfhdl.hw.annotation.top
 
 /** The hello workload on a 256-byte RAM (the firmware only touches the bottom 96 bytes): small
   * enough for DFacsimile's current packed-bits lowering of mutable memories.

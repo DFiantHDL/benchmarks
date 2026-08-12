@@ -4,6 +4,7 @@
 package dfhdl.benchmarks.serv
 
 import dfhdl.*
+import dfhdl.hw.annotation.top
 
 /** The RTLMeter `hello` workload: prints "Hi, I'm servant!" over the software UART, then loops
   * writing the halt address.

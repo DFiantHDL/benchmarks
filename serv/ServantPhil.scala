@@ -4,6 +4,7 @@
 package dfhdl.benchmarks.serv
 
 import dfhdl.*
+import dfhdl.hw.annotation.top
 
 /** The RTLMeter `phil` workload: Zephyr dining philosophers (timer interrupts, CSRs, full 32 KiB
   * RAM).
