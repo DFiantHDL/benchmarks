@@ -17,8 +17,8 @@ package dfhdl.benchmarks
   * binary location).
   */
 object Verilator:
-  private val built = scala.collection.mutable.Set.empty[String]
-  private val skip = scala.collection.mutable.Set.empty[String]
+  private val built     = scala.collection.mutable.Set.empty[String]
+  private val skip      = scala.collection.mutable.Set.empty[String]
   private val isWindows = sys.props.getOrElse("os.name", "").toLowerCase.contains("win")
 
   /** Runtime thread count for the verilated model: 0/1 build the classic single-threaded model (no
@@ -63,7 +63,7 @@ object Verilator:
   private val mcpsRe = """=\s*([0-9.]+)\s*Mcycles/s""".r
 
   private def parse(out: String): Option[(Double, String)] =
-    val mcps = mcpsRe.findFirstMatchIn(out).map(_.group(1).toDouble)
+    val mcps  = mcpsRe.findFirstMatchIn(out).map(_.group(1).toDouble)
     val state = out.linesIterator.find(_.contains("after ")).getOrElse("")
     mcps.map(m => (m, state))
 
@@ -73,7 +73,7 @@ object Verilator:
     */
   def run(top: String, harnessRel: String, warmup: Long, timed: Long): Option[(Double, String)] =
     val hdlDir = os.pwd / "sandbox" / top / "hdl"
-    val k = key(top)
+    val k      = key(top)
     if skip.contains(k) then None
     else if !os.exists(hdlDir) then
       println(s"[verilator] $top: no HDL at $hdlDir")
@@ -98,13 +98,13 @@ object Verilator:
   private def build(top: String, hdlDir: os.Path, harnessRel: String): Boolean =
     try
       os.remove.all(hdlDir / "obj_dir")
-      val svs = os.list(hdlDir).filter(_.ext == "sv").map(_.toString).toSeq
+      val svs     = os.list(hdlDir).filter(_.ext == "sv").map(_.toString).toSeq
       val harness = (os.pwd / os.RelPath(harnessRel)).toString
       // >= 2 threads: verilate a multithreaded model (MTask partitioning + internal thread pool).
       // The C++ harness API (construct + eval) is unchanged; Verilator manages the pool and the
       // generated makefile links pthread. 0/1 leaves the classic single-threaded reference.
       val threadFlags = if threads >= 2 then Seq("--threads", threads.toString) else Seq.empty
-      val cmd = Seq(
+      val cmd         = Seq(
         binaryName,
         "-O3",
         "--cc",
@@ -124,7 +124,7 @@ object Verilator:
         Seq(harness, "-CFLAGS", "-O3")
       val res =
         os.proc(cmd).call(cwd = hdlDir, env = rootEnv, check = false, stdout = os.Pipe,
-          stderr = os.Pipe)
+          stderr              = os.Pipe)
       if res.exitCode == 0 then true
       else
         println(s"[verilator] build failed for $top (exit ${res.exitCode}):")

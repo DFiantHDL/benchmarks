@@ -13,53 +13,53 @@ import dfhdl.*
 @hw.constraints.timing.clock(portName = "clk")
 class serv_decode extends RTDesign:
   val i_wb_rdt = Bits(32) <> IN // instruction word (bits 31:2 are used)
-  val i_wb_en = Bit <> IN
+  val i_wb_en  = Bit      <> IN
   // to state
-  val o_sh_right = Bit <> OUT
-  val o_bne_or_bge = Bit <> OUT
-  val o_cond_branch = Bit <> OUT
-  val o_e_op = Bit <> OUT
-  val o_ebreak = Bit <> OUT
-  val o_branch_op = Bit <> OUT
-  val o_shift_op = Bit <> OUT
-  val o_rd_op = Bit <> OUT
+  val o_sh_right     = Bit <> OUT
+  val o_bne_or_bge   = Bit <> OUT
+  val o_cond_branch  = Bit <> OUT
+  val o_e_op         = Bit <> OUT
+  val o_ebreak       = Bit <> OUT
+  val o_branch_op    = Bit <> OUT
+  val o_shift_op     = Bit <> OUT
+  val o_rd_op        = Bit <> OUT
   val o_two_stage_op = Bit <> OUT
-  val o_dbus_en = Bit <> OUT
+  val o_dbus_en      = Bit <> OUT
   // to bufreg
-  val o_bufreg_rs1_en = Bit <> OUT
-  val o_bufreg_imm_en = Bit <> OUT
-  val o_bufreg_clr_lsb = Bit <> OUT
+  val o_bufreg_rs1_en    = Bit <> OUT
+  val o_bufreg_imm_en    = Bit <> OUT
+  val o_bufreg_clr_lsb   = Bit <> OUT
   val o_bufreg_sh_signed = Bit <> OUT
   // to ctrl
   val o_ctrl_jal_or_jalr = Bit <> OUT
-  val o_ctrl_utype = Bit <> OUT
-  val o_ctrl_pc_rel = Bit <> OUT
-  val o_ctrl_mret = Bit <> OUT
+  val o_ctrl_utype       = Bit <> OUT
+  val o_ctrl_pc_rel      = Bit <> OUT
+  val o_ctrl_mret        = Bit <> OUT
   // to alu
-  val o_alu_sub = Bit <> OUT
+  val o_alu_sub     = Bit     <> OUT
   val o_alu_bool_op = Bits(2) <> OUT
-  val o_alu_cmp_eq = Bit <> OUT
-  val o_alu_cmp_sig = Bit <> OUT
-  val o_alu_rd_sel = Bits(3) <> OUT
+  val o_alu_cmp_eq  = Bit     <> OUT
+  val o_alu_cmp_sig = Bit     <> OUT
+  val o_alu_rd_sel  = Bits(3) <> OUT
   // to mem IF
   val o_mem_signed = Bit <> OUT
-  val o_mem_word = Bit <> OUT
-  val o_mem_half = Bit <> OUT
-  val o_mem_cmd = Bit <> OUT
+  val o_mem_word   = Bit <> OUT
+  val o_mem_half   = Bit <> OUT
+  val o_mem_cmd    = Bit <> OUT
   // to CSR
-  val o_csr_en = Bit <> OUT
-  val o_csr_addr = Bits(2) <> OUT
-  val o_csr_mstatus_en = Bit <> OUT
-  val o_csr_mie_en = Bit <> OUT
-  val o_csr_mcause_en = Bit <> OUT
-  val o_csr_source = Bits(2) <> OUT
-  val o_csr_d_sel = Bit <> OUT
-  val o_csr_imm_en = Bit <> OUT
-  val o_mtval_pc = Bit <> OUT
+  val o_csr_en         = Bit     <> OUT
+  val o_csr_addr       = Bits(2) <> OUT
+  val o_csr_mstatus_en = Bit     <> OUT
+  val o_csr_mie_en     = Bit     <> OUT
+  val o_csr_mcause_en  = Bit     <> OUT
+  val o_csr_source     = Bits(2) <> OUT
+  val o_csr_d_sel      = Bit     <> OUT
+  val o_csr_imm_en     = Bit     <> OUT
+  val o_mtval_pc       = Bit     <> OUT
   // to top
   val o_immdec_ctrl = Bits(4) <> OUT
-  val o_immdec_en = Bits(4) <> OUT
-  val o_op_b_source = Bit <> OUT
+  val o_immdec_en   = Bits(4) <> OUT
+  val o_op_b_source = Bit     <> OUT
   // to RF IF
   val o_rd_mem_en = Bit <> OUT
   val o_rd_csr_en = Bit <> OUT
@@ -67,30 +67,30 @@ class serv_decode extends RTDesign:
 
   val opcode = Bits(5) <> VAR.REG init all(0)
   val funct3 = Bits(3) <> VAR.REG init all(0)
-  val op20 = Bit <> VAR.REG init 0
-  val op21 = Bit <> VAR.REG init 0
-  val op22 = Bit <> VAR.REG init 0
-  val op26 = Bit <> VAR.REG init 0
-  val imm25 = Bit <> VAR.REG init 0
-  val imm30 = Bit <> VAR.REG init 0
+  val op20   = Bit     <> VAR.REG init 0
+  val op21   = Bit     <> VAR.REG init 0
+  val op22   = Bit     <> VAR.REG init 0
+  val op26   = Bit     <> VAR.REG init 0
+  val imm25  = Bit     <> VAR.REG init 0
+  val imm30  = Bit     <> VAR.REG init 0
 
   if (i_wb_en)
     funct3.din := i_wb_rdt(14, 12)
-    imm30.din := i_wb_rdt(30)
-    imm25.din := i_wb_rdt(25)
+    imm30.din  := i_wb_rdt(30)
+    imm25.din  := i_wb_rdt(25)
     opcode.din := i_wb_rdt(6, 2)
-    op20.din := i_wb_rdt(20)
-    op21.din := i_wb_rdt(21)
-    op22.din := i_wb_rdt(22)
-    op26.din := i_wb_rdt(26)
+    op20.din   := i_wb_rdt(20)
+    op21.din   := i_wb_rdt(21)
+    op22.din   := i_wb_rdt(22)
+    op26.din   := i_wb_rdt(26)
 
   o_two_stage_op := !opcode(2) || (funct3(0) && !funct3(1) && !opcode(0) && !opcode(4)) ||
     (funct3(1) && !funct3(2) && !opcode(0) && !opcode(4))
-  o_shift_op := opcode(2) && !funct3(1)
+  o_shift_op  := opcode(2) && !funct3(1)
   o_branch_op := opcode(4)
-  o_dbus_en := !opcode(2) && !opcode(4)
-  o_mtval_pc := opcode(4)
-  o_mem_word := funct3(1)
+  o_dbus_en   := !opcode(2) && !opcode(4)
+  o_mtval_pc  := opcode(4)
+  o_mem_word  := funct3(1)
   o_rd_alu_en := !opcode(0) && opcode(2) && !opcode(4)
   o_rd_mem_en := !opcode(2) && !opcode(0)
 
@@ -98,9 +98,9 @@ class serv_decode extends RTDesign:
   o_bufreg_rs1_en := !opcode(4) || (!opcode(1) && opcode(0))
   o_bufreg_imm_en := !opcode(2)
   // clear LSB of the immediate for BRANCH and JAL ops
-  o_bufreg_clr_lsb := opcode(4) && ((opcode(1, 0) == b"00") || (opcode(1, 0) == b"11"))
-  o_cond_branch := !opcode(0)
-  o_ctrl_utype := !opcode(4) && opcode(2) && opcode(0)
+  o_bufreg_clr_lsb   := opcode(4) && ((opcode(1, 0) == b"00") || (opcode(1, 0) == b"11"))
+  o_cond_branch      := !opcode(0)
+  o_ctrl_utype       := !opcode(4) && opcode(2) && opcode(0)
   o_ctrl_jal_or_jalr := opcode(4) && opcode(0)
   // PC-relative: true for jal, b*, auipc, o_ebreak; false for jalr, lui
   o_ctrl_pc_rel := (opcode(2, 0) == b"000") || (opcode(1, 0) == b"11") ||
@@ -110,35 +110,35 @@ class serv_decode extends RTDesign:
     (!opcode(2) && !opcode(3) && !opcode(0))
   o_rd_op := rd_op_w
 
-  o_sh_right := funct3(2)
+  o_sh_right   := funct3(2)
   o_bne_or_bge := funct3(0)
   // matches system ops except ecall/ebreak/mret
   val csr_op = opcode(4) && opcode(2) && funct3.|
-  o_ebreak := op20
-  o_ctrl_mret := opcode(4) && opcode(2) && op21 && !funct3.|
-  o_e_op := opcode(4) && opcode(2) && !op21 && !funct3.|
+  o_ebreak           := op20
+  o_ctrl_mret        := opcode(4) && opcode(2) && op21 && !funct3.|
+  o_e_op             := opcode(4) && opcode(2) && !op21 && !funct3.|
   o_bufreg_sh_signed := imm30
   // true for sub, b*, slt*; false for add*
   o_alu_sub := funct3(1) || funct3(0) || (opcode(3) && imm30) || opcode(4)
 
   // true for mtvec, mscratch, mepc and mtval; false for mstatus, mie, mcause
   val csr_valid = op20 || (op26 && !op21)
-  o_rd_csr_en := csr_op
-  o_csr_en := csr_op && csr_valid
+  o_rd_csr_en      := csr_op
+  o_csr_en         := csr_op && csr_valid
   o_csr_mstatus_en := csr_op && !op26 && !op22 && !op20
-  o_csr_mie_en := csr_op && !op26 && op22 && !op20
-  o_csr_mcause_en := csr_op && op21 && !op20
-  o_csr_source := funct3(1, 0)
-  o_csr_d_sel := funct3(2)
+  o_csr_mie_en     := csr_op && !op26 && op22 && !op20
+  o_csr_mcause_en  := csr_op && op21 && !op20
+  o_csr_source     := funct3(1, 0)
+  o_csr_d_sel      := funct3(2)
   val csr_imm_en_w = opcode(4) && opcode(2) && funct3(2)
   o_csr_imm_en := csr_imm_en_w
-  o_csr_addr := (op26 && op20, !op26 || op21).toBits
+  o_csr_addr   := (op26 && op20, !op26 || op21).toBits
 
-  o_alu_cmp_eq := funct3(2, 1) == b"00"
+  o_alu_cmp_eq  := funct3(2, 1) == b"00"
   o_alu_cmp_sig := !((funct3(0) && funct3(1)) || (funct3(1) && funct3(2)))
-  o_mem_cmd := opcode(3)
-  o_mem_signed := !funct3(2)
-  o_mem_half := funct3(0)
+  o_mem_cmd     := opcode(3)
+  o_mem_signed  := !funct3(2)
+  o_mem_half    := funct3(0)
   o_alu_bool_op := funct3(1, 0)
 
   o_immdec_ctrl := (

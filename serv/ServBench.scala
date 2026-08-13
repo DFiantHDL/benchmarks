@@ -35,7 +35,7 @@ private def stateLine(run: SimulationRun[? <: servant_sim], total: Long): String
   * `benchmarks/runMain dfhdl.benchmarks.serv.servBench`
   */
 object servBench extends NoTopAnnotIsRequired:
-  private val harness = "benchmarks/serv/verilator/bench_serv.cpp"
+  private val harness       = "benchmarks/serv/verilator/bench_serv.cpp"
   private var withVerilator = false
 
   private def bench(
@@ -50,8 +50,8 @@ object servBench extends NoTopAnnotIsRequired:
     resetAndRun(run, warmup)
     val t0 = System.nanoTime()
     run.continue(cycles)
-    val dt = (System.nanoTime() - t0) / 1e9
-    val mcps = cycles / dt / 1e6
+    val dt    = (System.nanoTime() - t0) / 1e9
+    val mcps  = cycles / dt / 1e6
     val state = stateLine(run, warmup + cycles)
     println(f"[$name $tier] timed $cycles%,d cycles in $dt%.3f s = $mcps%.3f Mcycles/s")
     println(state)
@@ -92,7 +92,7 @@ object servBench extends NoTopAnnotIsRequired:
       50_000L
     )
     bench("hello-32k", () => ServantHello(), "ServantHello", SimTier.Codegen, 100_000L, 2_000_000L)
-    bench("phil-32k", () => ServantPhil(), "ServantPhil", SimTier.Codegen, 100_000L, 10_000_000L)
+    bench("phil-32k", ()  => ServantPhil(), "ServantPhil", SimTier.Codegen, 100_000L, 10_000_000L)
     BenchTable.flush()
   end main
 end servBench
@@ -105,7 +105,7 @@ end servBench
 object servTrace extends NoTopAnnotIsRequired:
   def main(args: Array[String]): Unit =
     val cycles = args.headOption.map(_.toInt).getOrElse(90)
-    val run = ServantHelloMini().simulation.withTier(SimTier.Codegen).run()
+    val run    = ServantHelloMini().simulation.withTier(SimTier.Codegen).run()
     resetAndRun(run, 0)
     for c <- 1 to cycles do
       run.continue(1)
@@ -142,23 +142,23 @@ object servText extends NoTopAnnotIsRequired:
     val run = ServantHelloMini().simulation.withTier(SimTier.Codegen).run()
     resetAndRun(run, 0)
     if (args.contains("edges"))
-      var last = false
+      var last      = false
       var lastCycle = 0L
-      var edges = 0
-      var cycle = 0L
+      var edges     = 0
+      var cycle     = 0L
       while edges < 40 && cycle < 200_000 do
         run.continue(1)
         cycle += 1
         val cur = run.inspect { dut => dut.q.peek.bits.uint.toScalaBigInt == 1 }
         if (cur != last)
           println(s"cycle $cycle: q=${if cur then 1 else 0} (+${cycle - lastCycle})")
-          last = cur
+          last      = cur
           lastCycle = cycle
           edges += 1
     else
-      val cycles = args.headOption.map(_.toLong).getOrElse(300_000L)
-      val sb = new StringBuilder
-      var seen = BigInt(0)
+      val cycles   = args.headOption.map(_.toLong).getOrElse(300_000L)
+      val sb       = new StringBuilder
+      var seen     = BigInt(0)
       var advanced = 0L
       while advanced < cycles do
         run.continue(100)

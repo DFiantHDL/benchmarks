@@ -16,44 +16,44 @@ import dfhdl.*
 class serv_csr extends RTDesign:
   // State
   val i_trig_irq = Bit <> IN // ibus_ack
-  val i_en = Bit <> IN // cnt_en
-  val i_cnt0to3 = Bit <> IN
-  val i_cnt3 = Bit <> IN
-  val i_cnt7 = Bit <> IN
-  val i_cnt11 = Bit <> IN
-  val i_cnt12 = Bit <> IN
+  val i_en       = Bit <> IN // cnt_en
+  val i_cnt0to3  = Bit <> IN
+  val i_cnt3     = Bit <> IN
+  val i_cnt7     = Bit <> IN
+  val i_cnt11    = Bit <> IN
+  val i_cnt12    = Bit <> IN
   val i_cnt_done = Bit <> IN
-  val i_mem_op = Bit <> IN // !mtval_pc
-  val i_mtip = Bit <> IN
-  val i_trap = Bit <> IN
-  val o_new_irq = Bit <> OUT.REG init 0
+  val i_mem_op   = Bit <> IN // !mtval_pc
+  val i_mtip     = Bit <> IN
+  val i_trap     = Bit <> IN
+  val o_new_irq  = Bit <> OUT.REG init 0
   // Control
-  val i_e_op = Bit <> IN
-  val i_ebreak = Bit <> IN
-  val i_mem_cmd = Bit <> IN
-  val i_mstatus_en = Bit <> IN
-  val i_mie_en = Bit <> IN
-  val i_mcause_en = Bit <> IN
+  val i_e_op       = Bit     <> IN
+  val i_ebreak     = Bit     <> IN
+  val i_mem_cmd    = Bit     <> IN
+  val i_mstatus_en = Bit     <> IN
+  val i_mie_en     = Bit     <> IN
+  val i_mcause_en  = Bit     <> IN
   val i_csr_source = Bits(2) <> IN // 00 CSR, 01 EXT, 10 SET, 11 CLR
-  val i_mret = Bit <> IN
-  val i_csr_d_sel = Bit <> IN
+  val i_mret       = Bit     <> IN
+  val i_csr_d_sel  = Bit     <> IN
   // Data
   val i_rf_csr_out = Bit <> IN
-  val o_csr_in = Bit <> OUT
-  val i_csr_imm = Bit <> IN
-  val i_rs1 = Bit <> IN
-  val o_q = Bit <> OUT
+  val o_csr_in     = Bit <> OUT
+  val i_csr_imm    = Bit <> IN
+  val i_rs1        = Bit <> IN
+  val o_q          = Bit <> OUT
 
-  val mstatus_mie = Bit <> VAR.REG init 0
-  val mstatus_mpie = Bit <> VAR.REG init 0
-  val mie_mtie = Bit <> VAR.REG init 0
-  val mcause31 = Bit <> VAR.REG init 0
-  val mcause3_0 = Bits(4) <> VAR.REG init all(0)
-  val timer_irq_r = Bit <> VAR.REG init 0
+  val mstatus_mie  = Bit     <> VAR.REG init 0
+  val mstatus_mpie = Bit     <> VAR.REG init 0
+  val mie_mtie     = Bit     <> VAR.REG init 0
+  val mcause31     = Bit     <> VAR.REG init 0
+  val mcause3_0    = Bits(4) <> VAR.REG init all(0)
+  val timer_irq_r  = Bit     <> VAR.REG init 0
 
-  val d = i_csr_d_sel.sel(i_csr_imm, i_rs1)
+  val d       = i_csr_d_sel.sel(i_csr_imm, i_rs1)
   val mstatus = (mstatus_mie && i_cnt3) || i_cnt11 || i_cnt12
-  val mcause = i_cnt0to3.sel(mcause3_0(0), i_cnt_done && mcause31)
+  val mcause  = i_cnt0to3.sel(mcause3_0(0), i_cnt_done && mcause31)
   val csr_out = (i_mstatus_en && i_en && mstatus) || i_rf_csr_out || (i_mcause_en && i_en && mcause)
   o_q := csr_out
 
@@ -61,14 +61,14 @@ class serv_csr extends RTDesign:
   if (i_csr_source == b"01") csr_in_w := d
   else if (i_csr_source == b"10") csr_in_w := csr_out || d
   else if (i_csr_source == b"11") csr_in_w := csr_out && !d
-  else csr_in_w := csr_out
+  else csr_in_w                            := csr_out
   o_csr_in := csr_in_w
 
   val timer_irq = i_mtip && mstatus_mie && mie_mtie
 
   if (i_trig_irq)
     timer_irq_r.din := timer_irq
-    o_new_irq.din := timer_irq && !timer_irq_r
+    o_new_irq.din   := timer_irq && !timer_irq_r
   if (i_mie_en && i_cnt7) mie_mtie.din := csr_in_w
   // mie: cleared on trap, restored from mpie on mret, written on mstatus bit-3 access
   if ((i_trap && i_cnt_done) || (i_mstatus_en && i_cnt3 && i_en) || i_mret)

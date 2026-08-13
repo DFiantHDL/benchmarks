@@ -77,7 +77,7 @@ val shaK: Bits[32] X 64 <> CONST = Vector(
   * indefinitely; `probe` exports a 128-bit slice of it.
   */
 class SHA256Unit extends RTDesign:
-  val seed = Bits(32) <> IN
+  val seed  = Bits(32)  <> IN
   val probe = Bits(128) <> OUT
 
   val a = Bits(32) <> VAR.REG init h"6a09e667"
@@ -91,9 +91,9 @@ class SHA256Unit extends RTDesign:
 
   val w15 = Bits(32) <> VAR.REG init h"00000018"
   val w14 = w15.reg(1, init = h"00000000")
-  val w9 = w14.reg(5, init = h"00000000")
-  val w1 = w9.reg(8, init = h"00000000")
-  val w0 = w1.reg(1, init = h"61626380")
+  val w9  = w14.reg(5, init = h"00000000")
+  val w1  = w9.reg(8, init = h"00000000")
+  val w0  = w1.reg(1, init = h"61626380")
 
   val t = UInt(6) <> VAR.REG init 0
 
@@ -121,7 +121,7 @@ class SHA256Unit extends RTDesign:
 
   val sw0 = (w1 >> 7 | w1 << 25) ^ (w1 >> 18 | w1 << 14) ^ (w1 >> 3)
   val sw1 = (w14 >> 17 | w14 << 15) ^ (w14 >> 19 | w14 << 13) ^ (w14 >> 10)
-  val nw = (sw1.uint + w9.uint + sw0.uint + w0.uint + seed.uint).bits
+  val nw  = (sw1.uint + w9.uint + sw0.uint + w0.uint + seed.uint).bits
 
   w15.din := nw
 
@@ -137,16 +137,16 @@ end SHA256Unit
   * large-netlist behavior shows.
   */
 class SHAFarm(val n: Int = 32) extends RTDesign:
-  val agg = Bits(128) <> OUT
+  val agg   = Bits(128) <> OUT
   val units = List.tabulate(n) { i =>
     val u = SHA256Unit()
     u.seed <> d"32'${i * 2654435 + 101}".bits
     u
   }
   val acc = Bits(128) <> VAR
-  acc := units.head.probe
+  acc                        := units.head.probe
   for u <- units.tail do acc := acc ^ u.probe
-  agg := acc
+  agg                        := acc
 end SHAFarm
 
 /** Named farm-size variants for the external (Verilator) side of the scaling sweep: the size is a

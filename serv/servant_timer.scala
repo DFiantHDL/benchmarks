@@ -15,17 +15,17 @@ import dfhdl.*
 @hw.constraints.timing.clock(portName = "i_clk")
 @hw.constraints.timing.reset(portName = "i_rst")
 class servant_timer extends RTDesign:
-  val o_irq = Bit <> OUT.REG init 0
+  val o_irq    = Bit      <> OUT.REG init 0
   val i_wb_dat = Bits(32) <> IN
-  val i_wb_we = Bit <> IN
-  val i_wb_cyc = Bit <> IN
+  val i_wb_we  = Bit      <> IN
+  val i_wb_cyc = Bit      <> IN
   val o_wb_dat = Bits(32) <> OUT
 
-  val mtime = UInt(32) <> VAR.REG init 0
+  val mtime    = UInt(32) <> VAR.REG init 0
   val mtimecmp = UInt(32) <> VAR.REG init 0
 
-  o_wb_dat := mtime.bits
+  o_wb_dat                              := mtime.bits
   if (i_wb_cyc && i_wb_we) mtimecmp.din := i_wb_dat.uint
-  mtime.din := mtime + 1
-  o_irq.din := !(mtime - mtimecmp).bits(31)
+  mtime.din                             := mtime + 1
+  o_irq.din                             := !(mtime - mtimecmp).bits(31)
 end servant_timer

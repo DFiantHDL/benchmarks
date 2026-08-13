@@ -14,7 +14,7 @@ import dfhdl.internals.NoTopAnnotIsRequired
   * `benchmarks/runMain dfhdl.benchmarks.sha_farm.shaFarmBench`
   */
 object shaFarmBench extends NoTopAnnotIsRequired:
-  private val harness = "benchmarks/sha_farm/verilator/bench_sha.cpp"
+  private val harness       = "benchmarks/sha_farm/verilator/bench_sha.cpp"
   private var withVerilator = false
 
   // the named top classes carry the committed Verilog; `SHAFarm(n)` is DFacsimile-only
@@ -29,9 +29,9 @@ object shaFarmBench extends NoTopAnnotIsRequired:
     run.continue(warmup)
     val t0 = System.nanoTime()
     run.continue(cycles)
-    val dt = (System.nanoTime() - t0) / 1e9
+    val dt    = (System.nanoTime() - t0) / 1e9
     val total = warmup + cycles
-    val mcps = cycles / dt / 1e6
+    val mcps  = cycles / dt / 1e6
     val state = run.inspect { dut =>
       f"  after $total%,d cycles: agg=${hex(dut.agg.peek.uint.toScalaBigInt, 32)}"
     }
@@ -77,9 +77,9 @@ end shaFarmBench
   */
 object shaProfile extends NoTopAnnotIsRequired:
   def main(args: Array[String]): Unit =
-    val n = if args.nonEmpty then args(0).toInt else 32
+    val n      = if args.nonEmpty then args(0).toInt else 32
     val cycles = if args.length > 1 then args(1).toLong else 30_000_000L
-    val run = SHAFarm(n).simulation.withTier(SimTier.Codegen).run()
+    val run    = SHAFarm(n).simulation.withTier(SimTier.Codegen).run()
     run.continue(1_000_000L)
     val t0 = System.nanoTime()
     run.continue(cycles)

@@ -13,37 +13,37 @@ import dfhdl.*
 @hw.constraints.timing.clock(portName = "i_clk")
 class serv_immdec extends RTDesign:
   // State
-  val i_cnt_en = Bit <> IN
+  val i_cnt_en   = Bit <> IN
   val i_cnt_done = Bit <> IN
   // Control
-  val i_immdec_en = Bits(4) <> IN
-  val i_csr_imm_en = Bit <> IN
-  val i_ctrl = Bits(4) <> IN
-  val o_rd_addr = Bits(5) <> OUT
-  val o_rs1_addr = Bits(5) <> OUT
-  val o_rs2_addr = Bits(5) <> OUT
+  val i_immdec_en  = Bits(4) <> IN
+  val i_csr_imm_en = Bit     <> IN
+  val i_ctrl       = Bits(4) <> IN
+  val o_rd_addr    = Bits(5) <> OUT
+  val o_rs1_addr   = Bits(5) <> OUT
+  val o_rs2_addr   = Bits(5) <> OUT
   // Data
   val o_csr_imm = Bit <> OUT
-  val o_imm = Bit <> OUT
+  val o_imm     = Bit <> OUT
   // External
-  val i_wb_en = Bit <> IN
+  val i_wb_en  = Bit      <> IN
   val i_wb_rdt = Bits(32) <> IN // instruction word (bits 31:7 are used)
 
-  val imm31 = Bit <> VAR.REG init 0
+  val imm31       = Bit     <> VAR.REG init 0
   val imm19_12_20 = Bits(9) <> VAR.REG init all(0)
-  val imm7 = Bit <> VAR.REG init 0
-  val imm30_25 = Bits(6) <> VAR.REG init all(0)
-  val imm24_20 = Bits(5) <> VAR.REG init all(0)
-  val imm11_7 = Bits(5) <> VAR.REG init all(0)
+  val imm7        = Bit     <> VAR.REG init 0
+  val imm30_25    = Bits(6) <> VAR.REG init all(0)
+  val imm24_20    = Bits(5) <> VAR.REG init all(0)
+  val imm11_7     = Bits(5) <> VAR.REG init all(0)
 
   o_csr_imm := imm19_12_20(4)
   // CSR immediates are always zero-extended, hence clear the signbit
   val signbit = imm31 && !i_csr_imm_en
   o_rs1_addr := imm19_12_20(8, 4)
   o_rs2_addr := imm24_20
-  o_rd_addr := imm11_7
+  o_rd_addr  := imm11_7
 
-  if (i_wb_en) imm31.din := i_wb_rdt(31)
+  if (i_wb_en) imm31.din       := i_wb_rdt(31)
   if (i_wb_en) imm19_12_20.din := (i_wb_rdt(19, 12), i_wb_rdt(20)).toBits
   else if (i_cnt_en && i_immdec_en(1))
     imm19_12_20.din := (i_ctrl(3).sel(signbit, imm24_20(0)), imm19_12_20(8, 1)).toBits

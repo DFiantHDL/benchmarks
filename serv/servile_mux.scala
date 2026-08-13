@@ -17,43 +17,43 @@ import dfhdl.*
 class servile_mux extends RTDesign:
   val i_wb_cpu_adr = Bits(32) <> IN
   val i_wb_cpu_dat = Bits(32) <> IN
-  val i_wb_cpu_sel = Bits(4) <> IN
-  val i_wb_cpu_we = Bit <> IN
-  val i_wb_cpu_stb = Bit <> IN
+  val i_wb_cpu_sel = Bits(4)  <> IN
+  val i_wb_cpu_we  = Bit      <> IN
+  val i_wb_cpu_stb = Bit      <> IN
   val o_wb_cpu_rdt = Bits(32) <> OUT
-  val o_wb_cpu_ack = Bit <> OUT
+  val o_wb_cpu_ack = Bit      <> OUT
   val o_wb_mem_adr = Bits(32) <> OUT
   val o_wb_mem_dat = Bits(32) <> OUT
-  val o_wb_mem_sel = Bits(4) <> OUT
-  val o_wb_mem_we = Bit <> OUT
-  val o_wb_mem_stb = Bit <> OUT
+  val o_wb_mem_sel = Bits(4)  <> OUT
+  val o_wb_mem_we  = Bit      <> OUT
+  val o_wb_mem_stb = Bit      <> OUT
   val i_wb_mem_rdt = Bits(32) <> IN
-  val i_wb_mem_ack = Bit <> IN
+  val i_wb_mem_ack = Bit      <> IN
   val o_wb_ext_adr = Bits(32) <> OUT
   val o_wb_ext_dat = Bits(32) <> OUT
-  val o_wb_ext_sel = Bits(4) <> OUT
-  val o_wb_ext_we = Bit <> OUT
-  val o_wb_ext_stb = Bit <> OUT
+  val o_wb_ext_sel = Bits(4)  <> OUT
+  val o_wb_ext_we  = Bit      <> OUT
+  val o_wb_ext_stb = Bit      <> OUT
   val i_wb_ext_rdt = Bits(32) <> IN
-  val i_wb_ext_ack = Bit <> IN
-  val o_halt = Bit <> OUT // benchmark-added: pulses on the sim halt-address write
+  val i_wb_ext_ack = Bit      <> IN
+  val o_halt       = Bit      <> OUT // benchmark-added: pulses on the sim halt-address write
 
   val sim_ack = Bit <> VAR.REG init 0
-  val ext = i_wb_cpu_adr(31, 30) != b"00"
+  val ext     = i_wb_cpu_adr(31, 30) != b"00"
   val halt_en = i_wb_cpu_we && (i_wb_cpu_adr == h"90000000")
-  o_wb_cpu_rdt := ext.sel(i_wb_ext_rdt, i_wb_mem_rdt)
-  o_wb_cpu_ack := i_wb_ext_ack || i_wb_mem_ack || sim_ack
-  o_wb_mem_adr := i_wb_cpu_adr
-  o_wb_mem_dat := i_wb_cpu_dat
-  o_wb_mem_sel := i_wb_cpu_sel
-  o_wb_mem_we := i_wb_cpu_we
-  o_wb_mem_stb := i_wb_cpu_stb && !ext && !halt_en
-  o_wb_ext_adr := i_wb_cpu_adr
-  o_wb_ext_dat := i_wb_cpu_dat
-  o_wb_ext_sel := i_wb_cpu_sel
-  o_wb_ext_we := i_wb_cpu_we
-  o_wb_ext_stb := i_wb_cpu_stb && ext && !halt_en
-  sim_ack.din := 0
+  o_wb_cpu_rdt                              := ext.sel(i_wb_ext_rdt, i_wb_mem_rdt)
+  o_wb_cpu_ack                              := i_wb_ext_ack || i_wb_mem_ack || sim_ack
+  o_wb_mem_adr                              := i_wb_cpu_adr
+  o_wb_mem_dat                              := i_wb_cpu_dat
+  o_wb_mem_sel                              := i_wb_cpu_sel
+  o_wb_mem_we                               := i_wb_cpu_we
+  o_wb_mem_stb                              := i_wb_cpu_stb && !ext && !halt_en
+  o_wb_ext_adr                              := i_wb_cpu_adr
+  o_wb_ext_dat                              := i_wb_cpu_dat
+  o_wb_ext_sel                              := i_wb_cpu_sel
+  o_wb_ext_we                               := i_wb_cpu_we
+  o_wb_ext_stb                              := i_wb_cpu_stb && ext && !halt_en
+  sim_ack.din                               := 0
   if (i_wb_cpu_stb && !sim_ack) sim_ack.din := halt_en
-  o_halt := sim_ack
+  o_halt                                    := sim_ack
 end servile_mux

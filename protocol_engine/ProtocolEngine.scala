@@ -47,8 +47,8 @@ class ProtocolEngine(
   val lfsr = Bits(16) <> VAR.REG init h"ace1"
   lfsr.din := (lfsr(0) ^ lfsr(2) ^ lfsr(3) ^ lfsr(5)).bits ++ lfsr(15, 1)
 
-  val len = UInt(4) <> VAR.REG init 0
-  val idx = UInt(4) <> VAR.REG init 0
+  val len  = UInt(4) <> VAR.REG init 0
+  val idx  = UInt(4) <> VAR.REG init 0
   val csum = Bits(8) <> VAR.REG init all(0)
 
   // data-dependent inter-packet gap length (1..4 cycles), sampled by the dynamic wait
@@ -61,25 +61,25 @@ class ProtocolEngine(
       if (lfsr(3, 0) == syncPattern) NextStep else ThisStep
     def Capture: Step =
       phase.din := RxPhase.Sync
-      len.din := lfsr(7, 4).uint
-      idx.din := 0
-      csum.din := all(0)
+      len.din   := lfsr(7, 4).uint
+      idx.din   := 0
+      csum.din  := all(0)
       NextStep
     while (idx < len)
       val d = lfsr(7, 0)
       phase.din := RxPhase.Data
-      csum.din := csum ^ d
+      csum.din  := csum ^ d
       val x1 = sig ^ (sig << 13)
       val x2 = x1 ^ (x1 >> 17)
       val x3 = x2 ^ (x2 << 5)
-      sig.din := x3 ^ d.resize(32)
+      sig.din   := x3 ^ d.resize(32)
       trail.din := trail(119, 0) ++ d
-      idx.din := idx + 1
+      idx.din   := idx + 1
       1.cy.wait
     def Verdict: Step =
-      phase.din := RxPhase.Check
+      phase.din                        := RxPhase.Check
       if (csum(0) ^ csum(7)) drops.din := drops + 1
-      else packets.din := packets + 1
+      else packets.din                 := packets + 1
       lfsr(1, 0) match
         case b"11" => Hunt
         case _     => NextStep

@@ -17,18 +17,18 @@ import dfhdl.*
 @hw.constraints.timing.clock(portName = "i_wb_clk")
 @hw.constraints.timing.reset(portName = "i_wb_rst")
 class servant_ram(
-    val memfile: String = "benchmarks/serv/sw/hello_uart.hex",
+    val memfile: String     = "benchmarks/serv/sw/hello_uart.hex",
     val depth: Int <> CONST = 256
 ) extends RTDesign:
   self =>
-  val words = depth.toScalaInt / 4
+  val words    = depth.toScalaInt / 4
   val i_wb_adr = Bits.until(words) <> IN
-  val i_wb_dat = Bits(32) <> IN
-  val i_wb_sel = Bits(4) <> IN
-  val i_wb_we = Bit <> IN
-  val i_wb_cyc = Bit <> IN
-  val o_wb_rdt = Bits(32) <> OUT.REG init all(0)
-  val o_wb_ack = Bit <> OUT.REG init 0
+  val i_wb_dat = Bits(32)          <> IN
+  val i_wb_sel = Bits(4)           <> IN
+  val i_wb_we  = Bit               <> IN
+  val i_wb_cyc = Bit               <> IN
+  val o_wb_rdt = Bits(32)          <> OUT.REG init all(0)
+  val o_wb_ack = Bit               <> OUT.REG init 0
 
   o_wb_ack.din := i_wb_cyc && !o_wb_ack
 
@@ -36,9 +36,9 @@ class servant_ram(
   @hw.annotation.flattenMode.transparent
   val write = new RTDomain:
     val mem = Bits(32) X words <> VAR.REG initFile memfile
-    val we = i_wb_we && i_wb_cyc
-    if (we && i_wb_sel(0)) mem(i_wb_adr)(7, 0).din := i_wb_dat(7, 0)
-    if (we && i_wb_sel(1)) mem(i_wb_adr)(15, 8).din := i_wb_dat(15, 8)
+    val we  = i_wb_we && i_wb_cyc
+    if (we && i_wb_sel(0)) mem(i_wb_adr)(7, 0).din   := i_wb_dat(7, 0)
+    if (we && i_wb_sel(1)) mem(i_wb_adr)(15, 8).din  := i_wb_dat(15, 8)
     if (we && i_wb_sel(2)) mem(i_wb_adr)(23, 16).din := i_wb_dat(23, 16)
     if (we && i_wb_sel(3)) mem(i_wb_adr)(31, 24).din := i_wb_dat(31, 24)
 

@@ -17,7 +17,7 @@ object BenchTable:
       vMcps: Option[Double],
       vSig: Option[String]
   )
-  private val rows = scala.collection.mutable.ArrayBuffer.empty[Row]
+  private val rows     = scala.collection.mutable.ArrayBuffer.empty[Row]
   private var deferred = false
 
   /** Extract `key=<hex>` from a printed state line. Both the DFacsimile state line and the
@@ -49,16 +49,16 @@ object BenchTable:
     deferred = false
 
   private def render(): Unit =
-    val anyV = rows.exists(_.vMcps.isDefined)
+    val anyV   = rows.exists(_.vMcps.isDefined)
     val header =
       if anyV then Vector("Benchmark", "DFHDL Mcps", "Verilator Mcps", "DF / Veri", "signature")
       else Vector("Benchmark", "DFHDL Mcps")
     val body = rows.toVector.map { r =>
       val df = f"${r.dfMcps}%.2f"
       if anyV then
-        val v = r.vMcps.map(m => f"$m%.2f").getOrElse("-")
+        val v     = r.vMcps.map(m => f"$m%.2f").getOrElse("-")
         val speed = r.vMcps.map(m => f"${r.dfMcps / m}%.2fx").getOrElse("-")
-        val sig = (r.vSig, r.vMcps) match
+        val sig   = (r.vSig, r.vMcps) match
           case (Some(vs), _) if r.dfSig.nonEmpty && vs.equalsIgnoreCase(r.dfSig) => "match"
           case (Some(_), _)                                                      => "DIFF"
           case _                                                                 => "-"
@@ -66,13 +66,13 @@ object BenchTable:
       else Vector(r.label, df)
     }
     val rightAlign = if anyV then Vector(false, true, true, true, false) else Vector(false, true)
-    val widths = header.indices.map { c =>
+    val widths     = header.indices.map { c =>
       (header(c) +: body.map(_(c))).map(_.length).max
     }
     def line(cells: Vector[String]): String =
       cells.indices.map { c =>
-        val w = widths(c)
-        val s = cells(c)
+        val w   = widths(c)
+        val s   = cells(c)
         val pad = " " * (w - s.length)
         if rightAlign(c) then pad + s else s + pad
       }.mkString("| ", " | ", " |")

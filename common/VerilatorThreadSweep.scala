@@ -12,12 +12,12 @@ import dfhdl.internals.NoTopAnnotIsRequired
   * 16)
   */
 object verilatorThreadSweep extends NoTopAnnotIsRequired:
-  private val shaHarness = "benchmarks/sha_farm/verilator/bench_sha.cpp"
+  private val shaHarness   = "benchmarks/sha_farm/verilator/bench_sha.cpp"
   private val protoHarness = "benchmarks/protocol_engine/verilator/bench_protocol_engine.cpp"
 
   def main(args: Array[String]): Unit =
-    val warmup = 1_000_000L
-    val timed = 10_000_000L
+    val warmup       = 1_000_000L
+    val timed        = 10_000_000L
     val threadCounts = args.flatMap(_.toIntOption).toSeq match
       case s if s.nonEmpty => s
       case _               => Seq(1, 2, 4, 8, 16)
@@ -29,13 +29,13 @@ object verilatorThreadSweep extends NoTopAnnotIsRequired:
     val rows =
       for n <- threadCounts yield
         Verilator.threads = n
-        val sha = Verilator.run("SHAFarm64", shaHarness, warmup, timed).map(_._1)
+        val sha   = Verilator.run("SHAFarm64", shaHarness, warmup, timed).map(_._1)
         val proto = Verilator.run("ProtocolEngine", protoHarness, warmup, timed).map(_._1)
         (n, sha, proto)
 
     def cell(o: Option[Double]): String = o.map(m => f"$m%8.2f").getOrElse("     -  ")
-    val shaBase = rows.headOption.flatMap(_._2)
-    val protoBase = rows.headOption.flatMap(_._3)
+    val shaBase                         = rows.headOption.flatMap(_._2)
+    val protoBase                       = rows.headOption.flatMap(_._3)
     def speedup(cur: Option[Double], base: Option[Double]): String =
       (cur, base) match
         case (Some(c), Some(b)) if b > 0 => f"${c / b}%5.2fx"

@@ -14,7 +14,7 @@ import dfhdl.internals.NoTopAnnotIsRequired
   * `benchmarks/runMain dfhdl.benchmarks.protocol_engine.protocolEngineBench`
   */
 object protocolEngineBench extends NoTopAnnotIsRequired:
-  private val harness = "benchmarks/protocol_engine/verilator/bench_protocol_engine.cpp"
+  private val harness       = "benchmarks/protocol_engine/verilator/bench_protocol_engine.cpp"
   private var withVerilator = false
 
   private def bench(tier: SimTier, warmup: Long, cycles: Long): Unit =
@@ -22,9 +22,9 @@ object protocolEngineBench extends NoTopAnnotIsRequired:
     run.continue(warmup)
     val t0 = System.nanoTime()
     run.continue(cycles)
-    val dt = (System.nanoTime() - t0) / 1e9
+    val dt    = (System.nanoTime() - t0) / 1e9
     val total = warmup + cycles
-    val mcps = cycles / dt / 1e6
+    val mcps  = cycles / dt / 1e6
     val state = run.inspect { dut =>
       f"  after $total%,d cycles: packets=${dut.packets.peek.toScalaBigInt} " +
         s"drops=${dut.drops.peek.toScalaBigInt} " +
