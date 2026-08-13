@@ -1,12 +1,18 @@
 // `beh_lib.sv`'s two-flop synchronizer.
 //
-// The first *sequential* helper, so this is where the flop idiom that the other 727 flop instances
-// use gets written down: `rvdff #(W)` is a `VAR.REG`/`OUT.REG` with `init all(0)`, taking the
-// package-wide clock and the asynchronous active-low `rst_l` from config.scala. The baseline resets
-// every flop to 0, which is exactly what `init all(0)` under a reset annotation emits.
+// The baseline chains two `rvdff`s, but nothing here needs those flops placed individually, so what
+// this design wants to say is a two-deep delay:
+//
+//   dout <> din.reg(2, init = all(0))
+//
+// That crashes the compiler when the width comes from a parameter, as it does here (DFHDL#485), so
+// the registers are declared and chained instead. Restore the one-liner when #485 is fixed.
+//
+// The `init all(0)` is what `rvdff`'s asynchronous active-low reset to 0 becomes, taking
+// `clk`/`rst_l` from config.scala.
 //
 // Both call sites are single-domain (dec_tlu_ctl at WIDTH=6, pic_ctrl at WIDTH=TOTAL_INT-1), so
-// this is a two-cycle delay rather than a CDC crossing. Kept as two stages regardless, since
+// this is a two-cycle delay rather than a CDC crossing. Kept at two stages regardless, since
 // collapsing it would change the pipeline depth the callers were written against.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
