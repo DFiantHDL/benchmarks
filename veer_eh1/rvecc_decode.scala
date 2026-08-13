@@ -26,16 +26,6 @@ class rvecc_decode extends RTDesign:
   val single_ecc_error = Bit      <> OUT
   val double_ecc_error = Bit      <> OUT
 
-  /** The data bits each syndrome bit covers, transcribed from the baseline's six `assign`s. */
-  private val hammingGroup = Vector(
-    Vector(0, 1, 3, 4, 6, 8, 10, 11, 13, 15, 17, 19, 21, 23, 25, 26, 28, 30),
-    Vector(0, 2, 3, 5, 6, 9, 10, 12, 13, 16, 17, 20, 21, 24, 25, 27, 28, 31),
-    Vector(1, 2, 3, 7, 8, 9, 10, 14, 15, 16, 17, 22, 23, 24, 25, 29, 30, 31),
-    Vector(4, 5, 6, 7, 8, 9, 10, 18, 19, 20, 21, 22, 23, 24, 25),
-    Vector(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25),
-    Vector(26, 27, 28, 29, 30, 31)
-  )
-
   // Every bit is driven separately, so this is a variable.
   val ecc_check = Bits(7) <> VAR
   for (i <- 0 until 6)
