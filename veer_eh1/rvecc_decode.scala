@@ -1,0 +1,94 @@
+// `beh_lib.sv`'s SECDED decoder: checks a 32-bit word against its 7-bit ECC, corrects a single-bit
+// error, and flags single and double errors.
+//
+// Purely combinational, so it carries no clock or reset.
+//
+// The code is a (39, 32) Hamming code with an overall parity bit. Bits 0..5 of `ecc_check` are the
+// Hamming syndrome; bit 6 is the overall parity, which distinguishes a correctable single error
+// from an uncorrectable double one. `sed_ded` forces detection-only, used by the I-cache.
+//
+// Instantiated by ifu_aln_ctl, ifu_ic_mem, ifu_mem_ctl and lsu_ecc.
+//
+// Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
+// SPDX-FileCopyrightText: 2026 DFHDL contributors
+// SPDX-License-Identifier: Apache-2.0
+package dfhdl.benchmarks.veer_eh1
+
+import dfhdl.*
+
+class rvecc_decode extends RTDesign:
+  val en               = Bit      <> IN
+  val din              = Bits(32) <> IN
+  val ecc_in           = Bits(7)  <> IN
+  val sed_ded          = Bit      <> IN // detection only, no correction; used for the I$
+  val dout             = Bits(32) <> OUT
+  val ecc_out          = Bits(7)  <> OUT
+  val single_ecc_error = Bit      <> OUT
+  val double_ecc_error = Bit      <> OUT
+
+  /** The data bits each syndrome bit covers, transcribed from the baseline's six `assign`s. */
+  private val hammingGroup = Vector(
+    Vector(0, 1, 3, 4, 6, 8, 10, 11, 13, 15, 17, 19, 21, 23, 25, 26, 28, 30),
+    Vector(0, 2, 3, 5, 6, 9, 10, 12, 13, 16, 17, 20, 21, 24, 25, 27, 28, 31),
+    Vector(1, 2, 3, 7, 8, 9, 10, 14, 15, 16, 17, 22, 23, 24, 25, 29, 30, 31),
+    Vector(4, 5, 6, 7, 8, 9, 10, 18, 19, 20, 21, 22, 23, 24, 25),
+    Vector(11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25),
+    Vector(26, 27, 28, 29, 30, 31)
+  )
+
+  // Every bit is driven separately, so this is a variable.
+  val ecc_check = Bits(7) <> VAR
+  for (i <- 0 until 6)
+    ecc_check(i) <> hammingGroup(i).map(din(_)).foldLeft[Bit <> VAL](ecc_in(i))(_ ^ _)
+  // The overall parity bit.
+  ecc_check(6) <> ((din.^ ^ ecc_in.^) & ~sed_ded)
+
+  val syndrome = ecc_check(5, 0).uint
+
+  single_ecc_error <> (en & (ecc_check != all(0)) & ecc_check(6))
+  double_ecc_error <> (en & (ecc_check != all(0)) & ~ecc_check(6))
+
+  // One-hot mask of the syndrome's target bit; also driven a bit at a time. Syndrome 0 means "no
+  // error", so mask bit i-1 corresponds to syndrome i, which is the offset in the baseline's
+  // `genvar i=1; i<40` loop.
+  val error_mask = Bits(39) <> VAR
+  for (i <- 1 until 40) error_mask(i - 1) <> (syndrome == i)
+
+  // Data and check bits interleaved into Hamming positions.
+  val din_plus_parity: Bits[39] <> VAL =
+    (
+      ecc_in(6),
+      din(31, 26),
+      ecc_in(5),
+      din(25, 11),
+      ecc_in(4),
+      din(10, 4),
+      ecc_in(3),
+      din(3, 1),
+      ecc_in(2),
+      din(0),
+      ecc_in(1, 0)
+    )
+
+  val dout_plus_parity = single_ecc_error.sel(error_mask ^ din_plus_parity, din_plus_parity)
+
+  // ... and de-interleaved back out.
+  dout <>
+    (
+      dout_plus_parity(37, 32),
+      dout_plus_parity(30, 16),
+      dout_plus_parity(14, 8),
+      dout_plus_parity(6, 4),
+      dout_plus_parity(2)
+    )
+
+  ecc_out <>
+    (
+      dout_plus_parity(38) ^ (ecc_check == h"7'40"),
+      dout_plus_parity(31),
+      dout_plus_parity(15),
+      dout_plus_parity(7),
+      dout_plus_parity(3),
+      dout_plus_parity(1, 0)
+    )
+end rvecc_decode
