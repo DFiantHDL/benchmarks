@@ -1,14 +1,7 @@
 // The pinned `default` configuration of RTLMeter's VeeR-EH1, as `common_defines.vh` sets it.
 //
-// Verilog scope: `common_defines.vh` is a global include, so its macros are visible to every
-// module. The Scala equivalent is a top-level definition in this package: no import needed
-// anywhere, which is what a `define is. Body-scoped includes are different and live in
-// globals.scala -- see the port plan.
-//
-// The `: Int <> CONST` / `: Bits[W] <> CONST` ascriptions are load-bearing. A plain Scala Int
-// folds into a literal and the name is gone; ascribed, the emitter writes a named
-// `parameter int` into <Top>_defs.svh and every derived width keeps the name, which is what
-// makes the generated HDL diffable against the gold.
+// A global include, so these are top-level definitions in the package. `global.h` is body-scoped
+// and lives in globals.scala instead.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
 // SPDX-FileCopyrightText: 2026 DFHDL contributors
@@ -18,8 +11,7 @@ package dfhdl.benchmarks.veer_eh1
 import dfhdl.*
 
 // ---------------------------------------------------------------------------------------------
-// Elaboration switches. These are only ever `ifdef-tested, never read as values, so they are
-// plain Scala Booleans: they select code at elaboration and must not reach the IR.
+// Elaboration switches: only ever `ifdef-tested, never read as values.
 // ---------------------------------------------------------------------------------------------
 
 /** Defined by the pinned config. The build therefore has NO clock gating: `rvoclkhdr` is a wire

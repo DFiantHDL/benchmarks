@@ -18,8 +18,7 @@ class rvecc_encode extends RTDesign:
   val din     = Bits(32) <> IN
   val ecc_out = Bits(7)  <> OUT
 
-  // Every bit is driven separately, so this is a variable. Unlike the decoder's syndrome there is
-  // no received check bit to seed the chain with, so this reduces rather than folds.
+  // no received check bit to seed the chain, unlike the decoder's syndrome
   val ecc_out_temp = Bits(6) <> VAR
   for (i <- 0 until 6)
     ecc_out_temp(i) <> hammingGroup(i).map(din(_)).reduce[Bit <> VAL](_ ^ _)

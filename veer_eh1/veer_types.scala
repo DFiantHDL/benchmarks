@@ -1,26 +1,14 @@
 // `veer_types.sv`, VeeR-EH1's type package: 19 packed structs and one encoded enum.
 //
-// A SystemVerilog `struct packed` packs its first-declared field at the MSB, and DFHDL's `Struct`
-// does the same -- it emits a real `typedef struct packed` into <Top>_defs.svh with the fields in
-// declaration order. So field order here is the baseline's, 1:1, with no reversal. That matters:
-// several of these packets are sliced as flat bit vectors on their way through the bus and ECC
-// paths, so a reordering would be silent until a signature mismatch.
-//
-// Widths are written as the baseline writes them -- from the named constants in defines.scala, and
-// as `HI - LO + 1` where the baseline declared a `[HI:LO]` range -- so the emitted struct keeps the
-// names rather than folding to magic numbers.
+// Field order and widths are the baseline's, unchanged. Several of these packets are sliced as
+// flat bit vectors on the bus and ECC paths, so a reordering would stay silent until the
+// signature diverged.
 //
 // Two `ifdef branches are resolved by the pinned `default` configuration, which defines neither
 // macro: `RV_ICACHE_ECC` (so `icache_err_pkt_t` carries parity, not ECC, and `cache_debug_pkt_t`'s
 // write data is 34 bits) and `RV_BTB_48` (so every `way` field is 1 bit).
 //
-// CAUTION -- fields the baseline declares on a non-zero base. `br_pkt_t.prett` and
-// `predict_pkt_t.prett` are `logic [31:1]` upstream and `cache_debug_pkt_t.icache_dicawics` is
-// `logic [18:2]`. DFHDL bit ranges are zero-based, so these emit as `[30:0]` and `[16:0]`: the
-// same width, packing identically inside the struct, but **indexed differently**. Baseline
-// `prett[j]` is `prett(j - 1)` here and `icache_dicawics[j]` is `icache_dicawics(j - 2)`. Each is
-// marked at its declaration below. This is an off-by-one that compiles cleanly and would only
-// surface as a wrong branch target, so translate those slices deliberately.
+// `prett` is `[31:1]` upstream and `icache_dicawics` is `[18:2]`, so both are `BitsHL`.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
 // SPDX-FileCopyrightText: 2026 DFHDL contributors
@@ -37,29 +25,16 @@ private val GHR_WIDTH: Int <> CONST = RV_BHT_GHR_SIZE
 /** The baseline declares `[`RV_BTB_ADDR_HI:`RV_BTB_ADDR_LO]`. */
 private val BTB_INDEX_WIDTH: Int <> CONST = RV_BTB_ADDR_HI - RV_BTB_ADDR_LO + 1
 
+/** The baseline declares `[`RV_BHT_ADDR_HI:`RV_BHT_ADDR_LO]`. */
+private val BHT_HASH_WIDTH: Int <> CONST = RV_BHT_ADDR_HI - RV_BHT_ADDR_LO + 1
+
 // -------------------------------------------------------------------------------------------
-// Instruction class, for the performance counters. `Encoded.Manual(4)` rather than a plain
-// `Encoded`: the baseline pins `logic [3:0]` explicitly, and a derived width would happen to
-// agree today (15 cases -> 4 bits) but would move silently if a case were ever added.
+// Instruction class, for the performance counters.
 // -------------------------------------------------------------------------------------------
 
-enum inst_t(val value: UInt[4] <> CONST) extends Encoded.Manual(4):
-  case NULL extends inst_t(0)
-  case MUL extends inst_t(1)
-  case LOAD extends inst_t(2)
-  case STORE extends inst_t(3)
-  case ALU extends inst_t(4)
-  case CSRREAD extends inst_t(5)
-  case CSRWRITE extends inst_t(6)
-  case CSRRW extends inst_t(7)
-  case EBREAK extends inst_t(8)
-  case ECALL extends inst_t(9)
-  case FENCE extends inst_t(10)
-  case FENCEI extends inst_t(11)
-  case MRET extends inst_t(12)
-  case CONDBR extends inst_t(13)
-  case JAL extends inst_t(14)
-end inst_t
+enum inst_t extends Encoded:
+  case NULL, MUL, LOAD, STORE, ALU, CSRREAD, CSRWRITE, CSRRW, EBREAK, ECALL, FENCE, FENCEI, MRET,
+    CONDBR, JAL
 
 // -------------------------------------------------------------------------------------------
 // Trace and debug
@@ -83,8 +58,7 @@ case class icache_err_pkt_t(
 /** `icache_wrdata` is `{dicad0[31:0], dicad1[1:0]}`; 42 bits under `RV_ICACHE_ECC`, 34 without. */
 case class cache_debug_pkt_t(
     icache_wrdata: Bits[34] <> VAL,
-    // baseline `[18:2]`: emits as [16:0], so baseline [j] is icache_dicawics(j - 2) here
-    icache_dicawics: Bits[17] <> VAL,
+    icache_dicawics: BitsHL[18, 2] <> VAL,
     icache_rd_valid: Bit <> VAL,
     icache_wr_valid: Bit <> VAL
 ) extends Struct
@@ -101,8 +75,7 @@ case class br_pkt_t(
     br_start_error: Bit <> VAL,
     index: Bits[BTB_INDEX_WIDTH.type] <> VAL,
     bank: Bits[2] <> VAL,
-    // baseline `[31:1]`: emits as [30:0], so baseline prett[j] is prett(j - 1) here
-    prett: Bits[31] <> VAL, // predicted return target
+    prett: BitsHL[31, 1] <> VAL, // predicted return target
     fghr: Bits[GHR_WIDTH.type] <> VAL,
     way: Bit <> VAL, // 2 bits under `RV_BTB_48`, which the pinned config does not define
     ret: Bit <> VAL,
@@ -133,7 +106,7 @@ case class predict_pkt_t(
     valid: Bit <> VAL,
     br_error: Bit <> VAL,
     br_start_error: Bit <> VAL,
-    prett: Bits[31] <> VAL, // baseline `[31:1]`: baseline prett[j] is prett(j - 1) here
+    prett: BitsHL[31, 1] <> VAL,
     pcall: Bit <> VAL,
     pret: Bit <> VAL,
     pja: Bit <> VAL,

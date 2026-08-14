@@ -26,7 +26,6 @@ class rvecc_decode extends RTDesign:
   val single_ecc_error = Bit      <> OUT
   val double_ecc_error = Bit      <> OUT
 
-  // Every bit is driven separately, so this is a variable.
   val ecc_check = Bits(7) <> VAR
   for (i <- 0 until 6)
     ecc_check(i) <> hammingGroup(i).map(din(_)).foldLeft[Bit <> VAL](ecc_in(i))(_ ^ _)
@@ -38,9 +37,8 @@ class rvecc_decode extends RTDesign:
   single_ecc_error <> (en & (ecc_check != all(0)) & ecc_check(6))
   double_ecc_error <> (en & (ecc_check != all(0)) & ~ecc_check(6))
 
-  // One-hot mask of the syndrome's target bit; also driven a bit at a time. Syndrome 0 means "no
-  // error", so mask bit i-1 corresponds to syndrome i, which is the offset in the baseline's
-  // `genvar i=1; i<40` loop.
+  // One-hot mask of the syndrome's target bit. Syndrome 0 means "no error", so mask bit i-1 is
+  // syndrome i -- the offset in the baseline's `genvar i=1; i<40` loop.
   val error_mask = Bits(39) <> VAR
   for (i <- 1 until 40) error_mask(i - 1) <> (syndrome == i)
 

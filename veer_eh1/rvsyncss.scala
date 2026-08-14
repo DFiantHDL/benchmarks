@@ -1,8 +1,7 @@
 // `beh_lib.sv`'s two-flop synchronizer.
 //
-// The baseline chains two `rvdff`s, but nothing here needs those flops placed individually, so this
-// is a two-deep delay rather than two named registers. The `init` is what `rvdff`'s asynchronous
-// active-low reset to 0 becomes, taking `clk`/`rst_l` from config.scala.
+// The baseline chains two `rvdff`s; nothing here needs those flops placed individually, so this is
+// a two-deep delay. The `init` is `rvdff`'s asynchronous active-low reset to 0.
 //
 // Both call sites are single-domain (dec_tlu_ctl at WIDTH=6, pic_ctrl at WIDTH=TOTAL_INT-1), so
 // this is a two-cycle delay rather than a CDC crossing. Kept at two stages regardless, since

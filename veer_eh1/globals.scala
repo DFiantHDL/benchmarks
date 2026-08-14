@@ -1,13 +1,8 @@
 // `global.h`, VeeR-EH1's per-module localparam header.
 //
-// Unlike `common_defines.vh` (see defines.scala) this is NOT a global include. It is textually
-// included INSIDE 20 module bodies -- lsu_dccm_mem.sv:51, dbg.sv:118, dec_ib_ctl.sv:109, and so
-// on -- which makes its localparams members of each of those modules. `export globals.*` in a
-// design reproduces exactly that: the names become members of the design, so
-// `lsu_dccm_mem().DCCM_BITS` resolves the way the baseline's localparam does.
-//
-// This is why it is an `object` and not a package: a package cannot be an export target
-// ("not a valid prefix for a wildcard export, as it is a package").
+// Body-scoped, not global: it is included inside 20 module bodies (lsu_dccm_mem.sv:51,
+// dbg.sv:118, dec_ib_ctl.sv:109, ...), so each of those designs carries these as members via
+// `export globals.*`.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
 // SPDX-FileCopyrightText: 2026 DFHDL contributors
