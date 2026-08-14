@@ -8,7 +8,8 @@
 // macro: `RV_ICACHE_ECC` (so `icache_err_pkt_t` carries parity, not ECC, and `cache_debug_pkt_t`'s
 // write data is 34 bits) and `RV_BTB_48` (so every `way` field is 1 bit).
 //
-// `prett` is `[31:1]` upstream and `icache_dicawics` is `[18:2]`, so both are `BitsHL`.
+// Fields the baseline declares on a non-zero base are `BitsHL`: `prett` `[31:1]`,
+// `icache_dicawics` `[18:2]`, and `index` `[RV_BTB_ADDR_HI:RV_BTB_ADDR_LO]`.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
 // SPDX-FileCopyrightText: 2026 DFHDL contributors
@@ -16,11 +17,6 @@
 package dfhdl.benchmarks.veer_eh1
 
 import dfhdl.*
-
-/** `RV_BHT_GHR_RANGE` is `4:0`, a Verilog range fragment rather than a value, so it is not in
-  * defines.scala. Its width is `RV_BHT_GHR_SIZE`.
-  */
-private val GHR_WIDTH: Int <> CONST = RV_BHT_GHR_SIZE
 
 /** The baseline declares `[`RV_BTB_ADDR_HI:`RV_BTB_ADDR_LO]`. */
 private val BTB_INDEX_WIDTH: Int <> CONST = RV_BTB_ADDR_HI - RV_BTB_ADDR_LO + 1
@@ -73,10 +69,10 @@ case class br_pkt_t(
     hist: Bits[2] <> VAL,
     br_error: Bit <> VAL,
     br_start_error: Bit <> VAL,
-    index: Bits[BTB_INDEX_WIDTH.type] <> VAL,
+    index: BitsHL[RV_BTB_ADDR_HI.type, RV_BTB_ADDR_LO.type] <> VAL,
     bank: Bits[2] <> VAL,
     prett: BitsHL[31, 1] <> VAL, // predicted return target
-    fghr: Bits[GHR_WIDTH.type] <> VAL,
+    fghr: Bits[RV_BHT_GHR_SIZE.type] <> VAL,
     way: Bit <> VAL, // 2 bits under `RV_BTB_48`, which the pinned config does not define
     ret: Bit <> VAL,
     btag: Bits[RV_BTB_BTAG_SIZE.type] <> VAL
@@ -87,9 +83,9 @@ case class br_tlu_pkt_t(
     hist: Bits[2] <> VAL,
     br_error: Bit <> VAL,
     br_start_error: Bit <> VAL,
-    index: Bits[BTB_INDEX_WIDTH.type] <> VAL,
+    index: BitsHL[RV_BTB_ADDR_HI.type, RV_BTB_ADDR_LO.type] <> VAL,
     bank: Bits[2] <> VAL,
-    fghr: Bits[GHR_WIDTH.type] <> VAL,
+    fghr: Bits[RV_BHT_GHR_SIZE.type] <> VAL,
     way: Bit <> VAL,
     middle: Bit <> VAL
 ) extends Struct
@@ -101,7 +97,7 @@ case class predict_pkt_t(
     pc4: Bit <> VAL,
     hist: Bits[2] <> VAL,
     toffset: Bits[12] <> VAL,
-    index: Bits[BTB_INDEX_WIDTH.type] <> VAL,
+    index: BitsHL[RV_BTB_ADDR_HI.type, RV_BTB_ADDR_LO.type] <> VAL,
     bank: Bits[2] <> VAL,
     valid: Bit <> VAL,
     br_error: Bit <> VAL,
@@ -111,7 +107,7 @@ case class predict_pkt_t(
     pret: Bit <> VAL,
     pja: Bit <> VAL,
     btag: Bits[RV_BTB_BTAG_SIZE.type] <> VAL,
-    fghr: Bits[GHR_WIDTH.type] <> VAL,
+    fghr: Bits[RV_BHT_GHR_SIZE.type] <> VAL,
     way: Bit <> VAL
 ) extends Struct
 
