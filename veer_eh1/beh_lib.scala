@@ -12,6 +12,12 @@ package dfhdl.benchmarks.veer_eh1
 
 import dfhdl.*
 
+/** The baseline declares `[`RV_BTB_ADDR_HI:`RV_BTB_ADDR_LO]`; only the hashes below need it. */
+private val BTB_INDEX_WIDTH: Int <> CONST = RV_BTB_ADDR_HI - RV_BTB_ADDR_LO + 1
+
+/** The baseline declares `[`RV_BHT_ADDR_HI:`RV_BHT_ADDR_LO]`. */
+private val BHT_HASH_WIDTH: Int <> CONST = RV_BHT_ADDR_HI - RV_BHT_ADDR_LO + 1
+
 /** The (39, 32) Hamming code's parity groups: the data bits each check bit covers.
   *
   * `rvecc_encode` XORs each group to produce a check bit; `rvecc_decode` XORs the same group

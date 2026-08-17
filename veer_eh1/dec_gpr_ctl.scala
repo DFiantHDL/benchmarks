@@ -7,9 +7,10 @@
 // DFHDL `Vec` is 0-based, so the baseline's index `j` reaches them as `j - 1`. Everything else
 // (`w0v`, `gpr_wr_en`, ...) keeps the baseline's base-1 numbering through `BitsHL`.
 //
-// `active_clk` is a real port, declared as a derived clock (see `active` below). Nothing in the
-// pinned build drives it, so it collapses onto the root clock at every parent (`.active_clk(clk)`),
-// which is what `rvoclkhdr`'s `assign l1clk = clk` does under `RV_FPGA_OPTIMIZE`.
+// `active_clk` is a real port, declared as a derived clock via `ActiveDomain`. It is sourced in
+// `veer.sv` by `rvoclkhdr active_cg`, so until that module exists it is unsourced and climbs to
+// whatever design is compiled as the top, appearing there as an input port. Under
+// `RV_FPGA_OPTIMIZE` that source is `assign l1clk = clk`, i.e. ungated.
 //
 // `GPR_BANKS` is read by the bank loop, so it is pinned rather than generic. The sole instantiation
 // (dec.sv:521) passes 1, and at one bank the baseline's two spellings of the bank compare,
@@ -24,7 +25,7 @@ import dfhdl.*
 
 class dec_gpr_ctl(
     val GPR_BANKS: Int <> CONST = 1
-) extends RTDesign:
+) extends RTDesign, ActiveDomain:
   // dec.sv:406, verbatim. NOT a plain `clog2`: `$clog2(1)` is 0, which would make `wr_bank_id`
   // and `gpr_bank_id` zero-width, so the ternary floors it at 1.
   val GPR_BANKS_LOG2: Int <> CONST = (GPR_BANKS == 1).sel(1, clog2(GPR_BANKS))
@@ -68,10 +69,8 @@ class dec_gpr_ctl(
   val w2v     = BitsHL(31, 1)             <> VAR
 
   // `bankid_ff` is an `rvdffs`, so the baseline puts it on the gated `active_clk` while the
-  // self-gating `rvdffe` GPRs stay on the root `clk`. `active` declares the derived clock port;
-  // the region opens that context around the one flop, at the baseline's own declaration site.
-  val active = new RTDerivedClkDomain {}
-
+  // self-gating `rvdffe` GPRs stay on the root `clk`. `ActiveDomain` declares the derived clock
+  // port; the region opens that context around the one flop, at the baseline's declaration site.
   val bankid = new active.RTRegion:
     val gpr_bank_id = Bits(GPR_BANKS_LOG2) <> VAR.REG init all(0)
     if (wen_bank_id) gpr_bank_id.din := wr_bank_id
