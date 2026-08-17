@@ -1,8 +1,19 @@
 // `global.h`, VeeR-EH1's per-module localparam header.
 //
 // Body-scoped, not global: it is included inside 20 module bodies (lsu_dccm_mem.sv:51,
-// dbg.sv:118, dec_ib_ctl.sv:109, ...), so each of those designs carries these as members via
-// `export globals.*`.
+// dbg.sv:118, dec_ib_ctl.sv:109, ...), so each of those designs carries these as members. A trait
+// the design mixes in reproduces that exactly, and the emitted SystemVerilog shows it:
+//
+//   module lsu_dccm_ctl( ... );
+//     `include "dfhdl_defs.svh"                        // <- common_defines.vh, the global include
+//     localparam int DCCM_BITS = RV_DCCM_BITS;         // <- global.h, the body-scoped include
+//
+// The port plan originally specified `object globals` + `export globals.*`. That also makes the
+// names real members, but it emits them into the *shared* `<Top>_defs.svh` alongside the `RV_*`
+// macros, collapsing the two-tier structure the baseline has. It also trips a DFHDL elaboration
+// crash (DFHDL#494): the first use of an object-scoped `Int <> CONST` that aliases another const,
+// when that use is the left operand of `-`, fails with `Missing ref "TW_..."`. The trait form is
+// the better transcription independently of the bug.
 //
 // Upstream: chipsalliance/Cores-VeeR-EH1@915fb34, via RTLMeter designs/VeeR-EH1.
 // SPDX-FileCopyrightText: 2026 DFHDL contributors
@@ -11,7 +22,7 @@ package dfhdl.benchmarks.veer_eh1
 
 import dfhdl.*
 
-object globals:
+trait globals extends RTDesign:
   val TOTAL_INT: Int <> CONST = RV_PIC_TOTAL_INT_PLUS1
 
   val DCCM_BITS: Int <> CONST        = RV_DCCM_BITS

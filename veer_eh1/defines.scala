@@ -23,6 +23,15 @@ inline val RV_FPGA_OPTIMIZE = true
 /** `define ASSERT_ON at the top of common_defines.vh is retracted by `undef on its last line. */
 inline val ASSERT_ON = false
 
+/** `define RV_DCCM_ENABLE 1, defined by all three shipped configs. The `1` is never read: the macro
+  * is only ever `ifdef-tested (lsu_dccm_ctl.sv:106, lsu_ecc.sv:72, lsu_addrcheck.sv:65, mem.sv:95,
+  * dbg.sv:129), so the switch, not the value, is what carries over.
+  */
+inline val RV_DCCM_ENABLE = true
+
+/** `define RV_ICACHE_ENABLE 1, same story: `ifdef-tested only, never read as a value. */
+inline val RV_ICACHE_ENABLE = true
+
 // ---------------------------------------------------------------------------------------------
 // SRAM cell selection. Plain Scala Strings: they name a module in the baseline and pick a
 // (depth, width) here, so they are elaboration-only and never enter the IR.
@@ -58,14 +67,12 @@ val RV_DCCM_BITS: Int <> CONST            = 16
 val RV_DCCM_BYTE_WIDTH: Int <> CONST      = 4
 val RV_DCCM_DATA_WIDTH: Int <> CONST      = 32
 val RV_DCCM_ECC_WIDTH: Int <> CONST       = 7
-val RV_DCCM_ENABLE: Int <> CONST          = 1
 val RV_DCCM_FDATA_WIDTH: Int <> CONST     = 39
 val RV_DCCM_NUM_BANKS: Int <> CONST       = 8
 val RV_DCCM_SIZE: Int <> CONST            = 64
 val RV_DEC_INSTBUF_DEPTH: Int <> CONST    = 4
 val RV_DMA_BUF_DEPTH: Int <> CONST        = 4
 val RV_DMA_BUS_TAG: Int <> CONST          = 1
-val RV_ICACHE_ENABLE: Int <> CONST        = 1
 val RV_ICACHE_IC_DEPTH: Int <> CONST      = 8
 val RV_ICACHE_TAG_DEPTH: Int <> CONST     = 64
 val RV_ICACHE_TAG_HIGH: Int <> CONST      = 12
